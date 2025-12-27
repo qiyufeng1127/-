@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jarvis - Omnipotence Station V3.0</title>
+    <title>Jarvis - Floating Command Station V3.1</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
@@ -19,9 +19,7 @@
         }
 
         /* 自由桌面容器 */
-        #workspace {
-            display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start; height: 100%;
-        }
+        #workspace { display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start; height: 100%; }
 
         /* 模块基础样式：支持拖拽和缩放 */
         .panel { 
@@ -35,9 +33,7 @@
         .panel.dragging { opacity: 0.4; border: 2px dashed var(--p); }
 
         /* 右下角拉伸手柄美化 */
-        .panel::-webkit-resizer {
-            background-color: var(--p); border-radius: 10px 0 0 0;
-        }
+        .panel::-webkit-resizer { background-color: var(--p); border-radius: 10px 0 0 0; }
 
         .header { 
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px; 
@@ -46,9 +42,14 @@
         }
         .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
 
-        /* 内容区容器 */
-        .content-inner { flex: 1; display: flex; flex-direction: column; overflow: hidden; cursor: default; }
-        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
+        /* 关键：悬浮输入框的容器逻辑 */
+        .content-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: default; }
+
+        /* 滚动区域 */
+        .scroll-area { 
+            flex: 1; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; 
+            padding-bottom: 80px; /* 为底部悬浮框留出缓冲空间 */
+        }
         .scroll-area::-webkit-scrollbar { width: 4px; }
         .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
 
@@ -59,68 +60,80 @@
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 底部固定部署台样式 */
-        .fixed-command-deck {
-            background: #000; border: 2px solid var(--p); border-radius: 12px;
-            padding: 8px 12px; display: flex; gap: 10px; margin-top: 10px;
-            box-shadow: 0 -5px 15px rgba(255, 0, 127, 0.1); position: relative;
+        /* --- 核心：真正悬浮的底部部署台 --- */
+        .floating-command-deck {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0, 0, 0, 0.9); /* 半透明黑色背景 */
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            border: 2px solid var(--p); border-radius: 12px;
+            padding: 8px 12px; display: flex; gap: 10px; 
+            margin: 10px; /* 与边缘保持距离 */
+            box-shadow: 0 -5px 25px rgba(255, 0, 127, 0.3);
+            z-index: 100;
         }
-        /* 截图同款粉色角装饰 */
-        .fixed-command-deck::after {
+        /* 截图同款霓虹粉色直角 */
+        .floating-command-deck::after {
             content: ''; position: absolute; right: -2px; bottom: -2px;
-            width: 12px; height: 12px; background: var(--p);
+            width: 15px; height: 15px; background: var(--p);
             clip-path: polygon(100% 0, 100% 100%, 0 100%); border-radius: 0 0 12px 0;
+            filter: drop-shadow(0 0 5px var(--p));
         }
 
         input, select { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
         .p-btn { background: var(--p); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; padding: 6px 12px; font-size: 11px; }
-        .terminal { flex: 1; background: #0a0a0a; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; }
+        .terminal { flex: 1; background: #0a0a0a; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; margin-bottom: 60px;}
         
         /* 时间轴节点 */
-        .timeline-node { position: relative; padding-left: 30px; border-left: 2px solid #333; margin-left: 10px; margin-bottom: 20px; }
+        .timeline-node { position: relative; padding-left: 45px; margin-bottom: 25px; }
         .timeline-node::before {
-            content: attr(data-icon); position: absolute; left: -16px; top: 0;
-            width: 30px; height: 30px; background: var(--bg); border: 1px solid var(--p);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
+            content: ''; position: absolute; left: 19px; top: 20px; bottom: -25px; width: 2px; background: #333;
+        }
+        .timeline-icon {
+            position: absolute; left: 5px; top: 0; width: 30px; height: 30px; 
+            background: var(--bg); border: 2px solid var(--p); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 2;
         }
     </style>
 </head>
 <body>
 
     <div id="workspace">
-        <div class="panel" draggable="true" id="mod-assets" style="width: 320px; height: 450px;">
+        <div class="panel" draggable="true" id="mod-assets" style="width: 320px; height: 480px;">
             <div class="header">STATUS // <span>CORE ASSETS</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div style="text-align: center; margin: 15px 0;">
-                    <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">0</span></div>
-                    <div style="font-size:11px; color:#666;">自由额度: <span id="timeDisplay">0</span> MIN</div>
+            <div class="content-wrapper" onmousedown="event.stopPropagation()">
+                <div class="scroll-area">
+                    <div style="text-align: center; margin: 15px 0;">
+                        <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">0</span></div>
+                        <div style="font-size:11px; color:#666;">⌛ 自由额度: <span id="timeDisplay">0</span> MIN</div>
+                    </div>
+                    <div class="header">SHOP // <span>REWARDS</span></div>
+                    <div id="shopList"></div>
                 </div>
-                <div class="header">SHOP // <span>REWARDS</span></div>
-                <div class="scroll-area" id="shopList"></div>
-                <div class="fixed-command-deck">
-                    <input type="text" id="shopName" placeholder="奖励...">
+                <div class="floating-command-deck">
+                    <input type="text" id="shopName" placeholder="新奖品...">
                     <input type="number" id="shopCost" placeholder="C" style="width:40px">
                     <button class="p-btn" onclick="addShopItem()">+</button>
                 </div>
             </div>
         </div>
 
-        <div class="panel" draggable="true" id="mod-timeline" style="width: 450px; height: 500px;">
+        <div class="panel" draggable="true" id="mod-timeline" style="width: 480px; height: 550px;">
             <div class="header">TIMELINE // <span>MONITORING</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div class="scroll-area" id="timelineList"></div>
-                <div class="fixed-command-deck">
+            <div class="content-wrapper" onmousedown="event.stopPropagation()">
+                <div class="scroll-area" id="timelineList">
+                    </div>
+                <div class="floating-command-deck">
                     <input type="text" id="mTitle" placeholder="碎碎念、心情或新任务..." onkeypress="if(event.key==='Enter') deployMission()">
-                    <button class="p-btn" onclick="deployMission()">DEPLOY</button>
+                    <button class="p-btn" style="padding: 6px 15px;" onclick="deployMission()">DEPLOY</button>
                 </div>
             </div>
         </div>
 
         <div class="panel" draggable="true" id="mod-routine" style="width: 320px; height: 400px;">
             <div class="header">ROUTINES // <span>DAILY</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
+            <div class="content-wrapper" onmousedown="event.stopPropagation()">
                 <div class="scroll-area" id="routineList"></div>
-                <div class="fixed-command-deck">
+                <div class="floating-command-deck">
                     <input type="time" id="rTime" value="20:00">
                     <input type="text" id="rTitle" placeholder="固定周期任务...">
                     <button class="p-btn" onclick="addRoutine()">ADD</button>
@@ -128,15 +141,15 @@
             </div>
         </div>
 
-        <div class="panel" draggable="true" id="mod-brain" style="width: 350px; height: 350px;">
+        <div class="panel" draggable="true" id="mod-brain" style="width: 380px; height: 400px;">
             <div class="header">JARVIS // <span>CORE</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div class="terminal" id="terminalBox">> 模块化系统 V3.0 就绪。</div>
-                <div class="fixed-command-deck">
+            <div class="content-wrapper" onmousedown="event.stopPropagation()">
+                <div class="terminal" id="terminalBox">> 悬浮部署台 V3.1 已锁定底部位置。</div>
+                <div class="floating-command-deck">
                     <input type="text" id="chatInput" placeholder="在此汇报或吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
                     <button class="p-btn" onclick="sendChat()">SEND</button>
                 </div>
-                <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000;" onclick="aiSuggestion()">贾维斯，建议我现在做什么？</button>
+                <button class="p-btn" style="position:absolute; bottom:65px; left:10px; right:10px; background: var(--g); color: #000;" onclick="aiSuggestion()">贾维斯，建议我现在做什么？</button>
             </div>
         </div>
     </div>
@@ -146,13 +159,13 @@
         const API_URL = 'https://api.deepseek.com/chat/completions';
 
         let state = {
-            coins: parseInt(localStorage.getItem('j_v3_coins')) || 1000,
-            shop: JSON.parse(localStorage.getItem('j_v3_shop')) || [
+            coins: parseInt(localStorage.getItem('j_v31_coins')) || 1000,
+            shop: JSON.parse(localStorage.getItem('j_v31_shop')) || [
                 { name: "刷 30 分钟视频", cost: 100 },
-                { name: "吃个零食", cost: 50 }
+                { name: "休息 15 分钟", cost: 50 }
             ],
-            routines: JSON.parse(localStorage.getItem('j_v3_routines')) || [],
-            missions: JSON.parse(localStorage.getItem('j_v3_missions')) || [],
+            routines: JSON.parse(localStorage.getItem('j_v31_routines')) || [],
+            missions: JSON.parse(localStorage.getItem('j_v31_missions')) || [],
             activeId: null
         };
 
@@ -160,10 +173,10 @@
             render();
             setupDragAndDrop();
             setInterval(tick, 1000);
-            printTerminal("欢迎回来，指挥中心已完成 DIY 模块化升级。");
+            printTerminal("指挥中心就绪。所有输入框已强制悬浮于模块底部。");
         }
 
-        // --- 核心拖拽逻辑 ---
+        // --- 拖拽布局逻辑 ---
         function setupDragAndDrop() {
             const workspace = document.getElementById('workspace');
             const panels = document.querySelectorAll('.panel');
@@ -171,7 +184,8 @@
             panels.forEach(panel => {
                 panel.addEventListener('dragstart', (e) => {
                     const rect = panel.getBoundingClientRect();
-                    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
+                    // 避开右下角缩放手柄
+                    if (e.clientX > rect.right - 25 && e.clientY > rect.bottom - 25) {
                         e.preventDefault(); return; 
                     }
                     panel.classList.add('dragging');
@@ -198,30 +212,31 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // --- 业务渲染 ---
+        // --- 数据渲染 ---
         function render() {
             document.getElementById('coinsDisplay').innerText = state.coins;
             document.getElementById('timeDisplay').innerText = state.coins * 5;
 
-            // 渲染商店 [恢复功能]
+            // 商店
             document.getElementById('shopList').innerHTML = state.shop.map((item, idx) => `
                 <div class="item-row">
-                    <span style="font-size:12px;">${item.name}</span>
+                    <span>${item.name}</span>
                     <button class="p-btn" style="background:var(--g)" onclick="buyItem(${idx})">${item.cost}C</button>
                 </div>
             `).join('');
 
-            // 渲染时间轴
+            // 时间轴
             document.getElementById('timelineList').innerHTML = state.missions.map(m => `
-                <div class="timeline-node" data-icon="${m.icon || '📍'}">
-                    <div style="font-size:10px; color:#666;">${m.startTime}</div>
-                    <div style="font-weight:bold; color:${m.active ? 'var(--blue)' : 'inherit'}" onclick="toggleMission(${m.id})">
-                        ${m.title} ${m.active ? `(${formatTime(m.secondsLeft)})` : ''}
+                <div class="timeline-node">
+                    <div class="timeline-icon">${m.icon || '📍'}</div>
+                    <div style="font-size:10px; color:#666; margin-bottom:4px;">${m.startTime}</div>
+                    <div style="font-weight:bold; color:${m.active ? 'var(--blue)' : 'inherit'}; cursor:pointer" onclick="toggleMission(${m.id})">
+                        ${m.title} ${m.active ? `<span style="color:var(--p)">(${formatTime(m.secondsLeft)})</span>` : ''}
                     </div>
                 </div>
             `).join('');
 
-            // 渲染周期
+            // 周期
             document.getElementById('routineList').innerHTML = state.routines.map(r => `
                 <div class="item-row" style="border-left-color:var(--color-fixed)">
                     <span><b>[${r.time}]</b> ${r.title}</span>
@@ -231,11 +246,11 @@
             save();
         }
 
-        // --- 功能逻辑 ---
+        // --- 核心业务功能 ---
         async function deployMission() {
             const input = document.getElementById('mTitle'); if(!input.value) return;
-            printTerminal("贾维斯正在分析任务...");
-            const res = await callAI(`分析任务: "${input.value}"，返回严格JSON: {"mins":数字, "type":"work/life/mood", "icon":"图标"}`);
+            printTerminal("贾维斯正在接入神经分析...");
+            const res = await callAI(`分析任务: "${input.value}"，返回JSON: {"mins":数字, "icon":"图标"}`);
             const data = JSON.parse(res.match(/\{.*\}/s)[0]);
             
             state.missions.unshift({
@@ -243,20 +258,16 @@
                 secondsLeft: data.mins * 60, icon: data.icon, active: false, reward: Math.ceil(data.mins/5)
             });
             input.value = ''; render();
-        }
-
-        function addShopItem() {
-            const name = document.getElementById('shopName').value;
-            const cost = parseInt(document.getElementById('shopCost').value);
-            if(name && cost) { state.shop.push({name, cost}); render(); }
+            const scrollArea = document.querySelector('#mod-timeline .scroll-area');
+            scrollArea.scrollTop = 0; // 自动滚回顶部看新任务
         }
 
         function buyItem(idx) {
             const item = state.shop[idx];
             if(state.coins >= item.cost) {
                 state.coins -= item.cost;
-                confetti({ particleCount: 100 });
-                printTerminal(`成功兑换奖励: ${item.name}`);
+                confetti({ particleCount: 100, origin: { y: 0.7 } });
+                printTerminal(`消费成功：${item.name}`);
                 render();
             }
         }
@@ -270,40 +281,47 @@
             const active = state.missions.find(m => m.active);
             if(active && active.secondsLeft > 0) {
                 active.secondsLeft--;
-                if(active.secondsLeft % 5 === 0) render();
+                if(active.secondsLeft % 10 === 0) render();
             } else if(active && active.secondsLeft <= 0) {
                 active.active = false; state.coins += active.reward;
                 confetti({ particleCount: 150 });
-                printTerminal(`任务完成！获得金币: ${active.reward}`);
+                printTerminal(`任务达成！获得酬劳: ${active.reward}C`);
                 render();
             }
         }
 
-        // --- 周期任务 ---
+        function addShopItem() {
+            const name = document.getElementById('shopName').value;
+            const cost = parseInt(document.getElementById('shopCost').value);
+            if(name && cost) { state.shop.push({name, cost}); render(); }
+        }
+
         function addRoutine() {
             const time = document.getElementById('rTime').value;
             const title = document.getElementById('rTitle').value;
             if(title) { state.routines.push({id: Date.now(), time, title}); render(); }
         }
+
         function removeRoutine(id) { state.routines = state.routines.filter(r => r.id !== id); render(); }
 
-        // --- 工具 ---
+        // --- 通信与工具 ---
         async function callAI(p) {
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                    body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是贾维斯"},{role:"user",content:p}] })
+                    body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是管家贾维斯"},{role:"user",content:p}] })
                 });
                 const d = await res.json(); return d.choices[0].message.content;
-            } catch(e) { return '{"mins":25, "type":"work", "icon":"⚡"}'; }
+            } catch(e) { return '{"mins":25, "icon":"⚡"}'; }
         }
+
         function formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
         function printTerminal(t) { const b = document.getElementById('terminalBox'); b.innerHTML += `<div>> ${t}</div>`; b.scrollTop = b.scrollHeight; }
         function save() { 
-            localStorage.setItem('j_v3_coins', state.coins); 
-            localStorage.setItem('j_v3_shop', JSON.stringify(state.shop));
-            localStorage.setItem('j_v3_missions', JSON.stringify(state.missions));
-            localStorage.setItem('j_v3_routines', JSON.stringify(state.routines));
+            localStorage.setItem('j_v31_coins', state.coins); 
+            localStorage.setItem('j_v31_shop', JSON.stringify(state.shop));
+            localStorage.setItem('j_v31_missions', JSON.stringify(state.missions));
+            localStorage.setItem('j_v31_routines', JSON.stringify(state.routines));
         }
 
         init();
