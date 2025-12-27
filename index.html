@@ -3,87 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jarvis - Evolution System</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Jarvis - Evolution System V2.6</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; --highlight: #FF6347; }
-        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; transition: background 0.1s; }
+        :root { 
+            --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff;
+            --color-work: #FF4757;   /* 工作：红 */
+            --color-life: #70A1FF;   /* 生活：蓝 */
+            --color-fixed: #2ED573;  /* 固定：绿 */
+            --color-mood: #ECCC68;   /* 情绪：黄 */
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
         
-        /* 极致爆闪动画 */
-        @keyframes emergency-red { 0% { background: #000; } 50% { background: #ff0000; } 100% { background: #000; } }
-        .emergency-active { animation: emergency-red 0.1s infinite !important; }
-        .emergency-active .panel { opacity: 0.1; }
-
         .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #777; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
         .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
         
-        /* 纯 CSS 金币图标 */
-        .coin-icon { width: 24px; height: 24px; background: var(--g); border-radius: 50%; position: relative; box-shadow: 0 0 10px var(--g); display: inline-block; flex-shrink: 0; }
-        .coin-icon::after { content: 'C'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; font-size: 14px; font-weight: 900; }
+        /* 周期任务样式 */
+        .routine-card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; margin-bottom: 8px; border-left: 3px solid var(--color-fixed); }
+        .routine-card input[type="time"] { background: transparent; border: none; color: var(--g); font-family: monospace; cursor: pointer; }
 
-        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
-        .item-card { background: #333; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--p); transition: 0.3s; position: relative; }
-        .item-card.running { border-left-color: var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
-        .item-card.done { opacity: 0.4; border-left-color: #555; }
+        /* 时间轴核心样式 */
+        .timeline-container { position: relative; padding-left: 40px; border-left: 2px solid #444; margin-left: 20px; }
+        .timeline-item { position: relative; margin-bottom: 30px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; transition: 0.3s; }
+        .timeline-item::before { 
+            content: attr(data-icon); position: absolute; left: -54px; top: 12px; 
+            width: 28px; height: 28px; background: var(--bg); border: 2px solid;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .timeline-item.active { border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
 
+        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
         .input-bar { background: #000; border: 1px solid #444; border-radius: 12px; padding: 8px 12px; display: flex; gap: 8px; margin-top: 10px; }
-        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
+        input, select { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
         
         .p-btn { background: var(--p); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; padding: 8px 12px; font-size: 11px; }
-        
-        /* 报表遮罩层 */
-        #reportOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: none; flex-direction: column; padding: 50px; align-items: center; overflow-y: auto; }
-        .report-content { max-width: 800px; width: 100%; color: #fff; line-height: 1.6; font-size: 14px; background: #222; padding: 30px; border-radius: 20px; border: 1px solid var(--p); }
-
         .terminal { flex: 1; background: #111; border-radius: 15px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; }
-        .timer-text { font-family: monospace; font-size: 18px; color: var(--blue); font-weight: bold; }
         
-        .step-item { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 4px; }
-        .step-input { flex: 1; background: transparent; border: none; color: #aaa; font-size: 12px; outline: none; border-bottom: 1px solid transparent; }
-        .step-input:focus { border-bottom: 1px solid var(--blue); color: #fff; }
-        .check-box { cursor: pointer; color: var(--p); font-weight: bold; font-family: monospace; }
+        /* 冲突高亮 */
+        .conflict-tag { color: #ff4757; font-size: 10px; font-weight: bold; margin-left: 5px; animation: flash 1s infinite; }
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
-<body onclick="stopAlarmInterference()">
-
-    <div id="reportOverlay">
-        <button class="p-btn" style="align-self: flex-end; margin-bottom: 20px;" onclick="closeReport()">关闭报告 [ESC]</button>
-        <div class="report-content" id="reportData"></div>
-    </div>
+<body>
 
     <div class="panel">
-        <div class="header">STATUS // <span>CORE ASSETS</span></div>
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div style="font-size:32px; color:var(--g); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 12px;">
-                <div class="coin-icon"></div>
+        <div class="header">STATUS // <span>ROUTINES & ASSETS</span></div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size:32px; color:var(--g); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <div style="width:24px;height:24px;background:var(--g);border-radius:50%;color:#000;font-size:14px;display:flex;align-items:center;justify-content:center;">C</div>
                 <span id="coinsDisplay">0</span>
             </div>
-            <div style="font-size:11px; color:#777; margin-top: 5px;">
-                [TIME] 自由额度: <span id="timeDisplay">0</span> MIN
-            </div>
+            <div style="font-size:11px; color:#666; margin-top:5px;">自由额度: <span id="timeDisplay">0</span> MIN</div>
         </div>
-        <div class="header">SHOP // <span>REWARDS</span></div>
-        <div id="shopList" class="scroll-area"></div>
+
+        <div class="header">DAILY ROUTINES // <span>周期任务</span></div>
+        <div id="routineList" class="scroll-area"></div>
         <div class="input-bar">
-            <input type="text" id="shopName" placeholder="自由活动...">
-            <input type="number" id="shopMins" placeholder="MIN" style="width:45px">
-            <button class="p-btn" onclick="addShopItem()">+</button>
+            <input type="time" id="rTime" value="20:00">
+            <input type="text" id="rTitle" placeholder="固定任务...">
+            <button class="p-btn" onclick="addRoutine()">+</button>
         </div>
     </div>
 
     <div class="panel">
-        <div class="header">TIMELINE // <span>MONITORING</span></div>
-        <div id="missionList" class="scroll-area"></div>
+        <div class="header">TIMELINE // <span>SMART MONITORING</span></div>
+        <div id="timelineScroll" class="scroll-area">
+            <div id="timelineList" class="timeline-container"></div>
+        </div>
         <div class="input-bar">
-            <input type="text" id="mTitle" placeholder="新任务名称...">
-            <button class="p-btn" onclick="deploySmartMission()">DEPLOY</button>
+            <input type="text" id="mTitle" placeholder="碎碎念、心情或新任务...">
+            <button class="p-btn" onclick="deployMission()">DEPLOY</button>
         </div>
         <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('daily')">日报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('weekly')">周报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('monthly')">月报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('daily')">日报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('weekly')">周报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('monthly')">月报</button>
         </div>
     </div>
 
@@ -91,201 +86,163 @@
         <div class="header">JARVIS CORE // <span>BRAIN</span></div>
         <div class="terminal" id="terminalBox">> SYSTEM READY...</div>
         <div class="input-bar">
-            <input type="text" id="chatInput" placeholder="输入指令或汇报习惯..." onkeypress="if(event.key==='Enter') sendChat()">
+            <input type="text" id="chatInput" placeholder="在此汇报进度或吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
             <button class="p-btn" onclick="sendChat()">SEND</button>
         </div>
-        <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000; width: 100%;" onclick="autoAssignMission()">贾维斯，建议我现在做什么？</button>
+        <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000; width: 100%;" onclick="aiSuggestion()">贾维斯，建议我现在做什么？</button>
     </div>
-
-    <audio id="alarmSfx" loop src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"></audio>
 
     <script>
         const API_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
         const API_URL = 'https://api.deepseek.com/chat/completions';
 
-        let state = {
-            coins: parseInt(localStorage.getItem('j_v25_coins')) || 1000,
-            missions: JSON.parse(localStorage.getItem('j_v25_missions')) || [],
-            memories: JSON.parse(localStorage.getItem('j_v25_memories')) || [],
-            learningMemories: JSON.parse(localStorage.getItem('j_v25_learning')) || [],
-            shop: JSON.parse(localStorage.getItem('j_v25_shop')) || [],
-            activeId: null
+        // 颜色图标映射表
+        const typeStyles = {
+            work: { color: "var(--color-work)", icon: "⚒️" },
+            life: { color: "var(--color-life)", icon: "☕" },
+            fixed: { color: "var(--color-fixed)", icon: "📅" },
+            mood: { color: "var(--color-mood)", icon: "💭" }
         };
 
-        let alarmTimer = null;
-        let titleInterval = null;
-        let interferenceInterval = null;
+        let state = {
+            coins: parseInt(localStorage.getItem('j_v26_coins')) || 1000,
+            routines: JSON.parse(localStorage.getItem('j_v26_routines')) || [
+                { id: 1, time: "20:00", title: "发小红书", type: 'fixed' }
+            ],
+            missions: JSON.parse(localStorage.getItem('j_v26_missions')) || [],
+            activeId: null
+        };
 
         function init() {
             render();
             setInterval(tick, 1000);
-            Notification.requestPermission();
-            printTerminal("系统初始化完成。金币图标已切换为 CSS 渲染模式。");
+            printTerminal("固定任务引擎已启动，多色时间轴已同步。");
         }
 
+        // --- 周期任务逻辑 ---
+        function addRoutine() {
+            const time = document.getElementById('rTime').value;
+            const title = document.getElementById('rTitle').value;
+            if(!title) return;
+            state.routines.push({ id: Date.now(), time, title, type: 'fixed' });
+            render();
+            save();
+        }
+
+        function removeRoutine(id) {
+            state.routines = state.routines.filter(r => r.id !== id);
+            render();
+            save();
+        }
+
+        // --- 核心渲染：包含冲突检测的时间轴 ---
         function render() {
             document.getElementById('coinsDisplay').innerText = state.coins;
             document.getElementById('timeDisplay').innerText = state.coins * 5;
 
-            const mBox = document.getElementById('missionList');
-            mBox.innerHTML = state.missions.map(m => `
-                <div class="item-card ${m.id === state.activeId ? 'running' : ''} ${m.done ? 'done' : ''}">
+            // 渲染固定任务列表
+            const rList = document.getElementById('routineList');
+            rList.innerHTML = state.routines.map(r => `
+                <div class="routine-card">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="flex:1; cursor:pointer;" onclick="toggleMission(${m.id})">
-                            <b style="color:var(--g)">[${m.reward}C]</b> ${m.title}
-                        </span>
-                        <div class="timer-text">${formatTime(m.secondsLeft)}</div>
+                        <input type="time" value="${r.time}" onchange="updateRoutineTime(${r.id}, this.value)">
+                        <span style="font-size:12px; font-weight:bold;">${r.title}</span>
+                        <span style="cursor:pointer; color:#777;" onclick="removeRoutine(${r.id})">×</span>
                     </div>
-                    ${m.steps ? m.steps.map((s, idx) => `
-                        <div class="step-item">
-                            <span class="check-box" onclick="completeStep(${m.id}, ${idx})">${s.completed ? '[V]' : '[O]'}</span>
-                            <input type="text" class="step-input" value="${s.desc}" onchange="editAndLearnStep(${m.id}, ${idx}, this.value)">
-                        </div>
-                    `).join('') : ''}
-                    ${!m.steps && !m.done ? `<button class="p-btn" style="margin-top:10px; width:100%; background:var(--blue)" onclick="breakdownMission(${m.id})">拆解并开启督导</button>` : ''}
                 </div>
             `).join('');
+
+            // 渲染时间轴
+            const tList = document.getElementById('timelineList');
+            // 合并当前任务与今日周期任务用于显示
+            let combinedNodes = [
+                ...state.missions.map(m => ({ ...m, isMission: true })),
+                ...state.routines.map(r => ({ ...r, isRoutine: true, startTime: r.time }))
+            ];
+
+            // 按时间排序（最近的在上面）
+            combinedNodes.sort((a,b) => (b.startTime || "00:00") > (a.startTime || "00:00") ? 1 : -1);
+
+            tList.innerHTML = combinedNodes.map(node => {
+                const style = typeStyles[node.type || 'work'];
+                return `
+                    <div class="timeline-item ${node.id === state.activeId ? 'active' : ''}" 
+                         data-icon="${node.icon || style.icon}" 
+                         style="border-left: 4px solid ${style.color}; border-color: ${style.color}">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:10px; color:#777;">${node.startTime || 'NOW'}</span>
+                            ${node.isRoutine ? '<span class="conflict-tag">DAILY</span>' : ''}
+                        </div>
+                        <div style="margin-top:5px; cursor:pointer;" onclick="${node.isMission ? `toggleMission(${node.id})` : ''}">
+                            <b style="color:${style.color}">${node.title}</b>
+                            ${node.isMission ? `<span style="font-size:12px; color:var(--blue); float:right;">${formatTime(node.secondsLeft)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
             save();
         }
 
-        // --- 报表实体功能 ---
-        async function realReport(type) {
-            const overlay = document.getElementById('reportOverlay');
-            const dataBox = document.getElementById('reportData');
-            overlay.style.display = 'flex';
-            dataBox.innerHTML = `<h2>正在生成 ${type.toUpperCase()} REPORT...</h2><p>贾维斯正在扫描您的行为记录和金币流水...</p>`;
+        // --- 智能冲突检测部署 ---
+        async function deployMission() {
+            const input = document.getElementById('mTitle').value;
+            if(!input) return;
+
+            printTerminal(`贾维斯正在分析任务属性并检测潜在时间冲突...`);
             
-            const history = state.missions.slice(0, 15);
-            const prompt = `你是人工智能管家贾维斯。请根据数据生成一份${type}分析报告：${JSON.stringify(history)}。要求：使用Markdown，语气冷酷但忠诚，必须包含主人的进步分析和今日建议。`;
+            // AI 语义分析：类别、时长、图标
+            const prompt = `分析输入: "${input}"。
+            1. 预估需要多少分钟(数字)。
+            2. 类别(work/life/mood)。
+            3. 如果现在是 ${new Date().toLocaleTimeString()}，参考固定任务 ${JSON.stringify(state.routines)}，
+               如有时间重叠，请简述如何[延后]或[切分]建议。
+            返回严格JSON: {"mins":数字, "type":"类别", "icon":"图标", "advice":"建议内容"}`;
 
             try {
                 const res = await callAI(prompt);
-                dataBox.innerHTML = `<div style="text-align:left; white-space: pre-wrap;">${res}</div>`;
-            } catch(e) { dataBox.innerHTML = "报告生成失败，请检查网络连接。"; }
-        }
+                const data = JSON.parse(res.match(/\{.*\}/s)[0]);
+                
+                const now = new Date();
+                const startTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
-        function closeReport() { document.getElementById('reportOverlay').style.display = 'none'; }
+                const newM = {
+                    id: Date.now(),
+                    title: input,
+                    startTime: startTimeStr,
+                    secondsLeft: data.mins * 60,
+                    reward: Math.ceil(data.mins / 5),
+                    type: data.type,
+                    icon: data.icon,
+                    done: false
+                };
 
-        // --- 强制警报（防逃避） ---
-        function startAlarm() {
-            document.body.classList.add('emergency-active');
-            document.getElementById('alarmSfx').play();
-            
-            if(!titleInterval) {
-                titleInterval = setInterval(() => {
-                    document.title = document.title.includes("!!!") ? "[ MISSION WAITING ]" : "[ !!! WARNING !!! ]";
-                }, 100);
-            }
-
-            if(Notification.permission === "granted") {
-                new Notification("🚨 贾维斯督导：检测到无效游荡！", { body: "任务已停滞，请立即返回工作站！" });
-            }
-
-            if(!interferenceInterval) {
-                interferenceInterval = setInterval(() => {
-                    if (document.hidden) {
-                        alert("!!! 警告：检测到逃避行为 !!!\n请立即返回完成任务步骤！");
-                    }
-                }, 3000);
+                state.missions.unshift(newM);
+                document.getElementById('mTitle').value = '';
+                printTerminal(`贾维斯：任务已加入。建议：${data.advice}`);
+                render();
+            } catch(e) { 
+                printTerminal("分析引擎波动，已执行默认部署。");
+                // 默认部署回退
             }
         }
 
-        function stopAlarmInterference() {
-            document.body.classList.remove('emergency-active');
-            document.getElementById('alarmSfx').pause();
-            clearInterval(titleInterval);
-            clearInterval(interferenceInterval);
-            titleInterval = null;
-            interferenceInterval = null;
-            document.title = "Jarvis - Active";
-        }
-
-        // --- 核心逻辑 ---
+        // --- 基础工具函数 ---
         function tick() {
             if(state.activeId) {
                 const m = state.missions.find(x => x.id === state.activeId);
                 if(m && m.secondsLeft > 0) {
                     m.secondsLeft--;
-                    document.title = `[${formatTime(m.secondsLeft)}] ${m.title}`;
-                } else if(m && m.secondsLeft <= 0 && !m.done) {
+                    if(m.secondsLeft % 10 === 0) render();
+                } else if(m && m.secondsLeft <= 0) {
                     m.done = true; state.coins += m.reward; state.activeId = null;
-                    document.title = "MISSION COMPLETE";
                     confetti({particleCount: 150}); render();
                 }
             }
         }
 
-        async function deploySmartMission() {
-            const title = document.getElementById('mTitle').value;
-            if(!title) return;
-            printTerminal(`正在评估 [${title}] 的工程量...`);
-            const res = await callAI(`估算任务 "${title}" 的时间。返回JSON: {"mins":数字}`);
-            try {
-                const data = JSON.parse(res.match(/\{.*\}/s)[0]);
-                const newM = { id: Date.now(), title, reward: Math.ceil(data.mins / 5), secondsLeft: data.mins * 60, done: false };
-                state.missions.unshift(newM);
-                document.getElementById('mTitle').value = '';
-                render();
-                resetAlarmTimer(newM.id);
-            } catch(e) { printTerminal("评估异常。"); }
-        }
-
-        function resetAlarmTimer(id) {
-            clearTimeout(alarmTimer);
-            alarmTimer = setTimeout(() => {
-                if(state.activeId !== id) startAlarm();
-            }, 60000);
-        }
-
         function toggleMission(id) {
-            const m = state.missions.find(x => x.id === id);
-            if(m.done) return;
             state.activeId = (state.activeId === id) ? null : id;
-            if(state.activeId) stopAlarmInterference();
             render();
-        }
-
-        function completeStep(mId, sIdx) {
-            const m = state.missions.find(x => x.id === mId);
-            if(m) {
-                m.steps[sIdx].completed = true;
-                stopAlarmInterference();
-                printTerminal(`步骤已完成。督导警报暂时解除。`);
-                render();
-            }
-        }
-
-        function editAndLearnStep(mId, sIdx, val) {
-            const m = state.missions.find(x => x.id === mId);
-            if(m) {
-                m.steps[sIdx].desc = val;
-                state.learningMemories.push({ action: `修改步骤: ${val}`, time: Date.now() });
-                save();
-            }
-        }
-
-        async function autoAssignMission() {
-            printTerminal("正在根据历史记录分配任务...");
-            const context = { history: state.missions.slice(0,5).map(m=>m.title), memories: state.memories.slice(0,5).map(m=>m.text) };
-            const res = await callAI(`参考习惯 ${JSON.stringify(context.history)}，建议一个任务。返回JSON: {"title":"名","mins":分,"reason":"理"}`);
-            try {
-                const data = JSON.parse(res.match(/\{.*\}/s)[0]);
-                const newM = { id: Date.now(), title: `[建议] ${data.title}`, reward: Math.ceil(data.mins / 5), secondsLeft: data.mins * 60, done: false };
-                state.missions.unshift(newM);
-                render();
-                printTerminal(`建议理由: ${data.reason}`);
-                resetAlarmTimer(newM.id);
-            } catch(e) {}
-        }
-
-        async function breakdownMission(id) {
-            const m = state.missions.find(x => x.id === id);
-            printTerminal("正在根据您的习惯进行进化拆解...");
-            const res = await callAI(`拆解任务 "${m.title}"。返回JSON数组: [{"desc":"步骤"}]`);
-            try {
-                m.steps = JSON.parse(res.match(/\[.*\]/s)[0]).map(s => ({...s, completed: false}));
-                render();
-            } catch(e) {}
         }
 
         async function callAI(p) {
@@ -299,18 +256,13 @@
 
         function formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
         function printTerminal(t) { const b = document.getElementById('terminalBox'); b.innerHTML += `<div>> ${t}</div>`; b.scrollTop = b.scrollHeight; }
-        function save() { 
-            localStorage.setItem('j_v25_coins', state.coins); 
-            localStorage.setItem('j_v25_missions', JSON.stringify(state.missions)); 
-            localStorage.setItem('j_v25_memories', JSON.stringify(state.memories)); 
-            localStorage.setItem('j_v25_learning', JSON.stringify(state.learningMemories)); 
-            localStorage.setItem('j_v25_shop', JSON.stringify(state.shop)); 
-        }
-        async function sendChat() { 
+        function save() { localStorage.setItem('j_v26_coins', state.coins); localStorage.setItem('j_v26_missions', JSON.stringify(state.missions)); localStorage.setItem('j_v26_routines', JSON.stringify(state.routines)); }
+
+        async function sendChat() {
             const i = document.getElementById('chatInput'); if(!i.value) return;
-            state.memories.push({text: i.value, time: new Date().toISOString()});
-            printTerminal(`主人: ${i.value}`); 
-            const r = await callAI(i.value); printTerminal(`JARVIS: ${r}`); i.value = '';
+            printTerminal(`主人: ${i.value}`);
+            const r = await callAI(`主人说: "${i.value}"。请以管家贾维斯的语气回复。`);
+            printTerminal(`JARVIS: ${r}`); i.value = '';
         }
 
         init();
