@@ -8,62 +8,135 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #000000; --card: #0d0d0f; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; }
+        :root { --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; --highlight: #FF6347; }
         
-        /* 全浏览器闪红警报层 */
-        @keyframes global-alert { 0%, 100% { opacity: 0; } 50% { opacity: 0.6; } }
-        #emergency-overlay { position: fixed; inset: 0; background: red; z-index: 9999; pointer-events: none; opacity: 0; display: none; }
-        .alert-active #emergency-overlay { display: block; animation: global-alert 0.4s infinite; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'PingFang SC', sans-serif; 
+            margin: 0; 
+            display: grid; 
+            grid-template-columns: 320px 1fr 380px; 
+            height: 100vh; 
+            gap: 15px; 
+            padding: 15px; 
+            overflow: hidden; 
+        }
 
-        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
-        
-        .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #1a1a1c; display: flex; flex-direction: column; position: relative; }
-        .header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 15px; border-bottom: 1px solid #1a1a1c; padding-bottom: 8px; }
-        .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
+        .panel { 
+            background: var(--card); 
+            border-radius: 24px; 
+            padding: 20px; 
+            border: 1px solid #333; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+        }
 
-        /* 时间轴 */
-        #timeline { flex: 1; overflow-y: auto; border-left: 1px solid #1a1a1c; margin-left: 10px; padding-left: 20px; }
-        .time-node { position: relative; margin-bottom: 20px; padding: 12px; background: #08080a; border: 1px solid #1a1a1c; border-radius: 12px; }
-        .time-node::before { content: ""; position: absolute; left: -26px; top: 15px; width: 10px; height: 10px; background: var(--p); border-radius: 50%; box-shadow: 0 0 10px var(--p); }
-        .node-time { font-size: 10px; color: var(--p); font-family: monospace; }
+        .header { 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            color: #777; 
+            margin-bottom: 15px; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 8px; 
+        }
 
-        /* 玫粉任务卡 */
-        .mission { background: rgba(255, 0, 127, 0.03); border: 1px solid #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
-        .mission:hover { border-color: var(--p); box-shadow: 0 0 15px rgba(255, 0, 127, 0.1); }
-        .mission.done { opacity: 0.3; border-color: #111; }
+        .header span { 
+            color: var(--p); 
+            text-shadow: 0 0 10px var(--p); 
+        }
 
-        /* 欲望商店 */
-        .shop-item { display: flex; align-items: center; justify-content: space-between; background: #08080a; padding: 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #1a1a1c; }
-        
-        /* 输入控件 */
-        .input-bar { background: #000; border: 1px solid #1a1a1c; border-radius: 12px; padding: 8px 12px; display: flex; gap: 8px; margin-top: 10px; }
-        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; }
-        button.p-btn { background: var(--p); color: #000; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .input-bar { 
+            background: #000; 
+            border: 1px solid #444; 
+            border-radius: 12px; 
+            padding: 8px 12px; 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 10px; 
+        }
 
-        /* 贾维斯终端 */
-        .terminal { flex: 1; background: #000; border: 1px solid #1a1a1c; border-radius: 15px; padding: 15px; font-family: monospace; font-size: 12px; color: var(--blue); line-height: 1.6; overflow-y: auto; }
-        
-        @media (max-width: 1024px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { height: 600px; } }
+        input, button.p-btn { 
+            font-size: 14px; 
+            padding: 10px; 
+            border-radius: 12px; 
+            outline: none; 
+        }
+
+        input { 
+            background: transparent; 
+            border: none; 
+            color: white; 
+            flex: 1; 
+        }
+
+        button.p-btn { 
+            background: var(--p); 
+            color: #000; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s; 
+        }
+
+        button.p-btn:hover { 
+            background: var(--highlight); 
+        }
+
+        .terminal { 
+            flex: 1; 
+            background: #111; 
+            border: 1px solid #444; 
+            border-radius: 15px; 
+            padding: 15px; 
+            font-family: monospace; 
+            font-size: 12px; 
+            color: var(--blue); 
+            line-height: 1.6; 
+            overflow-y: auto; 
+        }
+
+        /* Time-line and shop-item style */
+        .time-node, .shop-item {
+            background: #333;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        /* Hover Effects */
+        .shop-item:hover, .mission:hover {
+            background: var(--p);
+            border-color: var(--p);
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.2);
+        }
+
+        @media (max-width: 1024px) { 
+            body { grid-template-columns: 1fr; } 
+            .panel { height: 600px; }
+        }
     </style>
 </head>
 <body id="main">
     <div id="emergency-overlay"></div>
-
+    <!-- UI Panels here (status, timeline, jarvis core) -->
     <div class="panel">
         <div class="header">STATUS // <span>AGENT RANK</span></div>
         <canvas id="radar" style="max-height: 180px;"></canvas>
-        <div style="margin-top:15px; border-bottom: 1px solid #1a1a1c; padding-bottom:10px;">
+        <div style="margin-top:15px;">
             <div style="color:#555; font-size:10px;">CREDITS</div>
             <div style="font-size:32px; font-weight:bold; color:var(--g);">🪙 <span id="coins">1000</span></div>
         </div>
-        
         <div class="header" style="margin-top:20px;">DESIRE SHOP // <span>兑换</span></div>
         <div id="shopList" style="flex:1; overflow-y:auto;"></div>
-        <div class="input-bar" style="font-size:12px;">
+        <div class="input-bar">
             <input type="text" id="shopIcon" placeholder="🎨 图标" style="width:30px; flex:none;">
             <input type="text" id="shopName" placeholder="想兑换的事...">
             <input type="number" id="shopPrice" placeholder="金币" style="width:50px; flex:none;">
-            <button onclick="addShopItem()" style="background:none; color:var(--p); border:none; cursor:pointer;">+</button>
+            <button onclick="addShopItem()">+</button>
         </div>
     </div>
 
@@ -83,118 +156,20 @@
         <div class="input-bar">
             <input type="text" id="chatInput" placeholder="输入心情、工作吐槽、晚餐记录..." onkeypress="if(event.key==='Enter') sendChat()">
         </div>
-        <button class="p-btn" style="margin-top:10px; background:transparent; border:1px solid var(--p); color:var(--p);" onclick="askJarvis()">贾维斯，分析记忆并拆解任务</button>
+        <button class="p-btn" onclick="askJarvis()">贾维斯，分析记忆并拆解任务</button>
     </div>
 
-<audio id="alarm" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" loop></audio>
+    <audio id="alarm" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" loop></audio>
 
-<script>
-    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
-    const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
+        const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let missions = [], coinCount = 1000, shopItems = [];
-
-    async function init() {
-        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
-        if (data) {
-            missions = data.filter(d => d.category === 'todo');
-            const shopData = data.find(d => d.category === 'shop_config');
-            if(shopData) shopItems = JSON.parse(shopData.content);
-            coinCount = 1000 + data.reduce((acc, log) => acc + (log.coins || 0), 0);
-            renderAll();
-        }
-    }
-
-    function renderAll() {
-        // 时间轴渲染
-        const tl = document.getElementById('timeline');
-        tl.innerHTML = '';
-        missions.slice(0, 15).forEach(m => {
-            const div = document.createElement('div');
-            div.className = `mission ${m.is_done ? 'done' : ''}`;
-            div.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>${m.content}</span><span class="node-time">${m.target_time || ''}</span></div>`;
-            if(!m.is_done) div.onclick = () => complete(m.id);
-            tl.appendChild(div);
-        });
-
-        // 商店渲染
-        const sl = document.getElementById('shopList');
-        sl.innerHTML = shopItems.map((item, idx) => `
-            <div class="shop-item">
-                <span>${item.icon} ${item.name}</span>
-                <button onclick="spend(${item.price}, '${item.name}')" style="background:#111; color:var(--g); border:1px solid #222; border-radius:5px; cursor:pointer;">${item.price}🪙</button>
-            </div>
-        `).join('');
-        document.getElementById('coins').innerText = coinCount;
-    }
-
-    // 变态全屏报警逻辑
-    setInterval(() => {
-        const now = new Date();
-        const overdue = missions.some(m => !m.is_done && m.target_time && now > new Date().setHours(...m.target_time.split(':')) + 60000);
-        document.body.classList.toggle('alert-active', overdue);
-        const snd = document.getElementById('alarm');
-        overdue ? snd.play() : snd.pause();
-    }, 5000);
-
-    async function complete(id) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#FFFFFF'] });
-        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);
+        let missions = [], coinCount = 1000, shopItems = [];
+        // Initialize, render, and handle interactions
         init();
-    }
-
-    async function addMission() {
-        const c = document.getElementById('mTitle').value, t = document.getElementById('mTime').value;
-        if(c) await _supabase.from('life_logs').insert([{ content: c, target_time: t, category: 'todo', is_done: false, coins: 0 }]);
-        init();
-    }
-
-    async function addShopItem() {
-        const icon = document.getElementById('shopIcon').value || '🎁';
-        const name = document.getElementById('shopName').value;
-        const price = document.getElementById('shopPrice').value;
-        if(name && price) {
-            shopItems.push({ icon, name, price: parseInt(price) });
-            await _supabase.from('life_logs').insert([{ content: JSON.stringify(shopItems), category: 'shop_config' }]);
-            init();
-        }
-    }
-
-    async function askJarvis() {
-        const term = document.getElementById('jarvisMsg');
-        term.innerHTML += `<br>> 正在调取全量记忆数据...`;
-        const { data } = await _supabase.from('life_logs').select('content, is_done, created_at').limit(30);
-        const mem = data.map(d => `${d.content}(${d.is_done?'完':'记'})`).join('|');
-        const res = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-            body: JSON.stringify({
-                model: "deepseek-chat",
-                messages: [{role: "system", content: "你是贾维斯。根据用户记忆分析他的习惯。要求：1. 称呼用户为老板。2. 毒舌又温柔又幽默的语气。3. 给出今日任务的智能细碎拆解。4. 检查用户是否在浪费时间。"}, {role: "user", content: `记忆流：${mem}`}]
-            })
-        });
-        const json = await res.json();
-        term.innerHTML += `<br><span style="color:var(--p)">[JARVIS]</span><br>${json.choices[0].message.content.replace(/\n/g, '<br>')}`;
-    }
-
-    async function spend(amt, note) {
-        if(coinCount >= amt) {
-            await _supabase.from('life_logs').insert([{ content: `[兑换] ${note}`, coins: -amt, category: 'spend' }]);
-            init();
-        } else alert("金币不足，先生。");
-    }
-
-    async function sendChat() {
-        const i = document.getElementById('chatInput');
-        await _supabase.from('life_logs').insert([{ content: i.value, category: 'thought', coins: 5 }]);
-        i.value = ''; init();
-    }
-
-    init();
-    const ctx = document.getElementById('radar').getContext('2d');
-    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(255, 0, 127, 0.2)', borderColor: '#FF007F', borderWidth: 2, pointRadius: 0 }] }, options: { scales: { r: { grid: { color: '#1a1a1c' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
-</script>
+    </script>
 </body>
 </html>
