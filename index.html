@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Jarvis - Resizable & Movable UI</title>
+    <title>Jarvis - Fixed Command Deck</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
@@ -12,259 +12,187 @@
             background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif;
             margin: 0; padding: 20px; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at 2px 2px, #333 1px, transparent 0);
-            background-size: 40px 40px; /* 科技感网格背景 */
+            background-size: 40px 40px;
         }
 
-        /* 布局容器：允许元素自由排列 */
-        #workspace {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-content: flex-start;
-            height: 100%;
-        }
+        #workspace { display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start; height: 100%; }
 
-        /* 面板核心样式：增加 resize 属性 */
+        /* 面板基础 */
         .panel { 
-            background: var(--card); border-radius: 16px; padding: 15px; 
+            background: var(--card); border-radius: 20px; padding: 15px; 
             border: 1px solid #333; display: flex; flex-direction: column; 
-            position: relative; overflow: auto;
-            min-width: 250px; min-height: 200px;
-            width: 320px; height: 400px; /* 初始大小 */
-            
-            /* 关键：允许修改大小 */
-            resize: both; 
-            overflow: hidden; 
-            
-            cursor: grab;
-            transition: box-shadow 0.2s;
+            position: relative; resize: both; overflow: hidden;
+            width: 380px; height: 500px; cursor: grab;
         }
-        
-        /* 调整大小的小手柄美化 */
-        .panel::-webkit-resizer {
-            background-color: var(--p);
-            border-radius: 10px 0 0 0;
-            box-shadow: 0 0 5px var(--p);
-        }
-
-        .panel:active { cursor: grabbing; box-shadow: 0 0 30px rgba(255, 0, 127, 0.2); }
-        .panel.dragging { opacity: 0.4; border: 2px dashed var(--p); }
 
         .header { 
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px; 
-            color: #888; margin-bottom: 12px; border-bottom: 1px solid #333; 
-            padding-bottom: 8px; pointer-events: none;
-            display: flex; justify-content: space-between;
+            color: #888; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 8px;
         }
 
-        /* 内容容器：必须防止拖拽冲突 */
-        .content-inner { 
-            flex: 1; display: flex; flex-direction: column; overflow: hidden; 
-            cursor: default; pointer-events: auto;
+        /* 核心修改：内容区与固定底部的分离布局 */
+        .content-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 确保内部滚动不影响外部 */
+            position: relative;
         }
 
-        /* 商店与列表 */
-        .item-row { 
-            background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; 
-            margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
-            border-left: 3px solid var(--p);
+        .scroll-area { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding-bottom: 20px; /* 为底部输入框留出空间 */
         }
 
-        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
-        .scroll-area::-webkit-scrollbar { width: 4px; }
-        .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+        /* --- 醒目的底部固定输入台 --- */
+        .fixed-command-deck {
+            background: #000;
+            border: 2px solid var(--p);
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            box-shadow: 0 -5px 20px rgba(255, 0, 127, 0.2); /* 向上扩散的发光感 */
+            position: relative;
+            z-index: 10;
+        }
 
-        .input-bar { background: #000; border-radius: 8px; padding: 5px 10px; display: flex; gap: 5px; margin-top: 10px; border: 1px solid #333; }
-        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 12px; }
-        .p-btn { background: var(--p); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; padding: 5px 10px; font-size: 10px; white-space: nowrap; }
+        /* 装饰用的发光角，匹配你截图中的效果 */
+        .fixed-command-deck::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            bottom: -2px;
+            width: 15px;
+            height: 15px;
+            background: var(--p);
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+            border-radius: 0 0 12px 0;
+            filter: blur(2px);
+        }
+
+        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; font-weight: 500; }
+        input::placeholder { color: #555; }
         
-        .terminal { flex: 1; background: #0a0a0a; border-radius: 10px; padding: 10px; font-family: 'Consolas', monospace; font-size: 11px; color: var(--blue); }
+        .deploy-btn { 
+            background: var(--p); color: #000; border: none; border-radius: 8px; 
+            font-weight: 900; cursor: pointer; padding: 5px 15px; font-size: 12px;
+            transition: 0.2s;
+        }
+        .deploy-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+        /* 时间轴节点美化（参考白色简约版） */
+        .timeline-item {
+            display: flex; gap: 15px; margin-bottom: 20px; position: relative;
+        }
+        .timeline-left { display: flex; flex-direction: column; align-items: center; width: 50px; }
+        .time-label { font-size: 10px; color: #777; white-space: nowrap; }
+        .timeline-dot { 
+            width: 12px; height: 12px; border: 2px solid var(--p); border-radius: 50%; 
+            background: var(--bg); margin-top: 5px; z-index: 2;
+        }
+        .timeline-line { position: absolute; left: 24px; top: 20px; bottom: -20px; width: 2px; background: #333; }
+        .timeline-content { flex: 1; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; border: 1px solid #2a2a2a; }
+
+        .terminal { flex: 1; background: #0a0a0a; border-radius: 10px; padding: 10px; font-family: monospace; font-size: 11px; color: var(--blue); }
     </style>
 </head>
 <body>
 
     <div id="workspace">
-        <div class="panel" draggable="true" id="shop">
-            <div class="header">SYSTEM // <span>SHOP</span> <span>[Drag to Move / Resize ↘]</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <div style="font-size:24px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">0</span></div>
-                    <div style="font-size:10px; color:#666;">兑换券: <span id="timeDisplay">0</span> MIN</div>
+        <div class="panel" draggable="true" id="timeline" style="width: 450px;">
+            <div class="header">TIMELINE // <span>MONITORING</span></div>
+            
+            <div class="content-container" onmousedown="event.stopPropagation()">
+                <div class="scroll-area" id="timelineList">
+                    </div>
+
+                <div class="fixed-command-deck">
+                    <input type="text" id="mTitle" placeholder="碎碎念或新任务..." onkeypress="if(event.key==='Enter') deployMission()">
+                    <button class="deploy-btn" onclick="deployMission()">DEPLOY</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="panel" draggable="true" id="shop" style="width: 320px;">
+            <div class="header">STATUS // <span>CORE ASSETS</span></div>
+            <div class="content-inner" style="display:flex; flex-direction:column; height:100%;" onmousedown="event.stopPropagation()">
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">1000</span></div>
+                    <div style="font-size:11px; color:#555;">自由额度: 5000 分钟</div>
+                </div>
+                <div class="header">SHOP // <span>REWARDS</span></div>
                 <div class="scroll-area" id="shopList"></div>
-                <div class="input-bar">
-                    <input type="text" id="shopName" placeholder="奖励...">
-                    <input type="number" id="shopCost" placeholder="C" style="width:35px">
-                    <button class="p-btn" onclick="addShopItem()">+</button>
-                </div>
             </div>
         </div>
 
-        <div class="panel" draggable="true" id="timeline" style="width: 400px;">
-            <div class="header">MONITOR // <span>TIMELINE</span> <span>↘</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div class="scroll-area" id="timelineList"></div>
-                <div class="input-bar">
-                    <input type="text" id="mTitle" placeholder="碎碎念或任务...">
-                    <button class="p-btn" onclick="deployMission()">DEPLOY</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel" draggable="true" id="routine">
-            <div class="header">SCHEDULE // <span>ROUTINES</span> <span>↘</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div class="scroll-area" id="routineList"></div>
-                <div class="input-bar">
-                    <input type="time" id="rTime" value="20:00">
-                    <input type="text" id="rTitle" placeholder="固定任务...">
-                    <button class="p-btn" onclick="addRoutine()">ADD</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel" draggable="true" id="brain" style="width: 350px;">
-            <div class="header">CORE // <span>JARVIS BRAIN</span> <span>↘</span></div>
-            <div class="content-inner" onmousedown="event.stopPropagation()">
-                <div class="terminal" id="terminalBox">> 模块化引擎 V2.8 启动完毕。<br>> 拖拽顶部或空白处移动。<br>> 拖拽右下角手柄修改尺寸。</div>
-                <div class="input-bar">
-                    <input type="text" id="chatInput" placeholder="指令..." onkeypress="if(event.key==='Enter') sendChat()">
-                    <button class="p-btn" onclick="sendChat()">SEND</button>
-                </div>
+        <div class="panel" draggable="true" id="brain" style="width: 350px; height: 300px;">
+            <div class="header">JARVIS // <span>BRAIN</span></div>
+            <div class="content-inner" style="display:flex; flex-direction:column; height:100%;" onmousedown="event.stopPropagation()">
+                <div class="terminal" id="terminalBox">> 底部部署台已加固。</div>
             </div>
         </div>
     </div>
 
     <script>
         let state = {
-            coins: parseInt(localStorage.getItem('jv28_coins')) || 1000,
-            shop: JSON.parse(localStorage.getItem('jv28_shop')) || [{name: "刷视频 30min", cost: 100}],
-            routines: JSON.parse(localStorage.getItem('jv28_routines')) || [],
-            missions: JSON.parse(localStorage.getItem('jv28_missions')) || []
+            missions: [
+                { title: "发照相馆小红书", time: "17:36", steps: ["筛选照片", "撰写文案", "检查排版"] }
+            ]
         };
 
-        function init() {
-            render();
-            setupDragAndDrop();
-            printTerminal("系统感知中... 布局已解锁，主人可随意调整。");
-        }
-
-        // --- 拖放位置逻辑 ---
-        function setupDragAndDrop() {
-            const workspace = document.getElementById('workspace');
-            const panels = document.querySelectorAll('.panel');
-
-            panels.forEach(panel => {
-                panel.addEventListener('dragstart', (e) => {
-                    // 如果点击的是右下角调整大小区域，则禁止拖拽（通过判断点击位置）
-                    const rect = panel.getBoundingClientRect();
-                    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
-                        e.preventDefault();
-                        return;
-                    }
-                    panel.classList.add('dragging');
-                });
-
-                panel.addEventListener('dragend', () => {
-                    panel.classList.remove('dragging');
-                });
-            });
-
-            workspace.addEventListener('dragover', e => {
-                e.preventDefault();
-                const dragging = document.querySelector('.dragging');
-                const afterElement = getDragAfterElement(workspace, e.clientX, e.clientY);
-                if (afterElement == null) {
-                    workspace.appendChild(dragging);
-                } else {
-                    workspace.insertBefore(dragging, afterElement);
-                }
-            });
-        }
-
-        function getDragAfterElement(container, x, y) {
-            const draggableElements = [...container.querySelectorAll('.panel:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = x - box.left - box.width / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        // --- 业务渲染逻辑 ---
         function render() {
-            document.getElementById('coinsDisplay').innerText = state.coins;
-            document.getElementById('timeDisplay').innerText = state.coins * 5;
-
-            document.getElementById('shopList').innerHTML = state.shop.map(item => `
-                <div class="item-row">
-                    <span>${item.name}</span>
-                    <button class="p-btn" style="background:var(--g)" onclick="buyItem(${item.cost}, '${item.name}')">${item.cost}C</button>
+            const list = document.getElementById('timelineList');
+            list.innerHTML = state.missions.map((m, index) => `
+                <div class="timeline-item">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-left">
+                        <span class="time-label">${m.time}</span>
+                        <div class="timeline-dot"></div>
+                    </div>
+                    <div class="timeline-content">
+                        <div style="font-weight:bold; color:var(--g); margin-bottom:8px;">${m.title}</div>
+                        ${m.steps ? m.steps.map(s => `<div style="font-size:12px; color:#aaa; margin-bottom:4px;">○ ${s}</div>`).join('') : ''}
+                    </div>
                 </div>
             `).join('');
-
-            document.getElementById('routineList').innerHTML = state.routines.map(r => `
-                <div class="item-row" style="border-left-color:var(--blue)">
-                    <span style="font-size:11px;">[${r.time}] ${r.title}</span>
-                </div>
-            `).join('');
-
-            document.getElementById('timelineList').innerHTML = state.missions.map(m => `
-                <div class="item-row" style="border-left-color:var(--blue); flex-direction:column; align-items:flex-start;">
-                    <span style="font-size:9px; color:#666;">${m.time}</span>
-                    <span style="font-size:12px;">${m.title}</span>
-                </div>
-            `).join('');
-            save();
-        }
-
-        function addShopItem() {
-            const name = document.getElementById('shopName').value;
-            const cost = parseInt(document.getElementById('shopCost').value);
-            if(name && cost) { state.shop.push({name, cost}); render(); }
-        }
-
-        function buyItem(cost, name) {
-            if(state.coins >= cost) {
-                state.coins -= cost;
-                confetti({ particleCount: 150, origin: { y: 0.7 } });
-                printTerminal(`兑换成功: ${name}`);
-                render();
-            }
+            
+            // 每次渲染后自动滚动到底部，以便看到最新任务
+            list.scrollTop = list.scrollHeight;
         }
 
         function deployMission() {
-            const title = document.getElementById('mTitle').value;
-            if(!title) return;
-            state.missions.unshift({title, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})});
-            document.getElementById('mTitle').value = '';
+            const input = document.getElementById('mTitle');
+            if(!input.value) return;
+            
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+            
+            state.missions.push({
+                title: input.value,
+                time: timeStr,
+                steps: ["等待详细拆解..."]
+            });
+            
+            input.value = '';
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#FF007F', '#00D2FF'] });
             render();
         }
 
-        function addRoutine() {
-            const time = document.getElementById('rTime').value;
-            const title = document.getElementById('rTitle').value;
-            if(title) { state.routines.push({time, title}); render(); }
-        }
+        // 简单的面板拖拽初始化
+        document.querySelectorAll('.panel').forEach(panel => {
+            panel.ondragstart = (e) => {
+                if (e.target.closest('.fixed-command-deck') || e.target.closest('.scroll-area')) {
+                    e.preventDefault(); return;
+                }
+                panel.classList.add('dragging');
+            };
+            panel.ondragend = () => panel.classList.remove('dragging');
+        });
 
-        function save() {
-            localStorage.setItem('jv28_coins', state.coins);
-            localStorage.setItem('jv28_shop', JSON.stringify(state.shop));
-            localStorage.setItem('jv28_routines', JSON.stringify(state.routines));
-            localStorage.setItem('jv28_missions', JSON.stringify(state.missions));
-        }
-
-        function printTerminal(t) {
-            const b = document.getElementById('terminalBox');
-            b.innerHTML += `<div>> ${t}</div>`;
-            b.scrollTop = b.scrollHeight;
-        }
-
-        init();
+        render();
     </script>
 </body>
 </html>
