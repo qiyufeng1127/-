@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Great Me - 伟大之我 V13.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #0a0a0a; --card: #1c1c1e; --p: #ff4d94; --g: #ffb800; --text: #ffffff; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: grid; grid-template-columns: 340px 1fr 340px; height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }
+        .panel { background: var(--card); border-radius: 30px; padding: 25px; display: flex; flex-direction: column; border: 1px solid #333; overflow: hidden; }
+        
+        /* 属性雷达图 */
+        #radar { max-height: 250px; margin: 20px 0; }
+        
+        /* 核心输入与气泡 */
+        .dump-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .bubble { padding: 15px 20px; border-radius: 20px; font-size: 15px; border-left: 6px solid #444; transition: 0.3s; background: #2c2c2e; animation: pop 0.4s ease; }
+        .pos { border-color: #339af0; background: rgba(51, 154, 240, 0.1); }
+        .neg { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
+        .mood { border-color: #845ef7; background: rgba(132, 94, 247, 0.1); }
+
+        .input-group { background: #2c2c2e; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center; margin-top: 20px; }
+        input { background: transparent; border: none; color: white; flex: 1; padding: 10px; outline: none; font-size: 16px; }
+        
+        .stat-card { background: #2c2c2e; border-radius: 20px; padding: 15px; margin-bottom: 15px; }
+        .coin-val { font-size: 28px; font-weight: 800; color: var(--g); }
+        @keyframes pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <div style="color: var(--p); font-weight: bold; font-size: 12px; letter-spacing: 2px;">HQ STRATEGY</div>
+    <div style="font-size: 22px; font-weight: 900; margin: 10px 0;">伟大之我系统</div>
+    <canvas id="radar"></canvas>
+    <div class="stat-card">
+        <div style="font-size: 12px; color: #888;">特工状态</div>
+        <div id="aiStatus" style="font-size: 14px; margin-top: 5px;">正在监测实时执行率...</div>
+    </div>
+</div>
+
+<div class="panel" style="background: #000; border-color: var(--p);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <span style="font-size: 12px; color: #666;">BRAIN DUMP / 意识流捕捉</span>
+        <span class="coin-val">🪙 <span id="coins">1250</span></span>
+    </div>
+    <div class="dump-box" id="dumpArea"></div>
+    <div class="input-group">
+        <input type="text" id="masterInput" placeholder="捕捉想法... (Cmd + Enter)">
+        <span style="cursor:pointer" onclick="handleInput()">⚡</span>
+    </div>
+</div>
+
+<div class="panel">
+    <div style="font-weight: bold; margin-bottom: 20px;">📊 任务分类归档</div>
+    <div id="archive" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px;"></div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+        <button onclick="location.reload()" style="width:100%; padding:12px; border-radius:15px; border:none; background:var(--p); color:white; font-weight:bold;">同步云端记忆</button>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 初始属性数据
+    let stats = { exec: 60, goal: 70, insight: 55, creative: 45, recovery: 80, focus: 50 };
+
+    async function init() {
+        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
+        if (data) {
+            document.getElementById('dumpArea').innerHTML = '';
+            let currentCoins = 1250;
+            data.forEach(log => {
+                renderBubble(log);
+                currentCoins += (log.coins || 0);
+            });
+            document.getElementById('coins').innerText = currentCoins;
+            updateAIAdvice(data);
+        }
+    }
+
+    async function handleInput() {
+        const val = document.getElementById('masterInput').value.trim();
+        if (!val) return;
+
+        let type = 'note';
+        let reward = 0;
+        // 智能分类逻辑
+        if (/(写|做|发|跑|学|画|完成|文案|小红书)/.test(val)) { type = 'pos'; reward = 50; }
+        else if (/(焦虑|拖延|累|不想)/.test(val)) { type = 'neg'; reward = -100; }
+        else if (/(心|想|觉得|烦)/.test(val)) { type = 'mood'; }
+
+        await _supabase.from('life_logs').insert([{ content: val, category: type, coins: reward }]);
+        document.getElementById('masterInput').value = '';
+        init();
+    }
+
+    function renderBubble(log) {函数renderBubble(log) {
+        const div = document.createElement('div');const div = document.createElement('div')；
+        div.className = `bubble ${log.category}`;div.className = ' bubble ${log.category} '；
+        div.innerText = log.content;
+        document.getElementById('dumpArea').appendChild(div);document.getElementById (dumpArea”).appendChild (div);
+    }
+
+    function updateAIAdvice(data) {
+        const posCount = data.filter(i => i.category === 'pos').length;
+        const negCount = data.filter(i => i.category === 'neg').length;
+        let advice = "监测中：建议记录一条最小胜利。";
+        if (negCount > posCount) advice = "警告：检测到多条阻碍，请进行2分钟冥想。";
+        if (posCount > 3) advice = "特工表现出色，今日执行力评价：卓越。";
+        document.getElementById('aiStatus').innerText = advice;
+    }
+
+    // 雷达图配置
+    const ctx = document.getElementById('radar').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['执行力', '目标感', '洞察力', '创新力', '恢复力', '专注力'],
+            datasets: [{ data: Object.values(stats), backgroundColor: 'rgba(255, 77, 148, 0.2)', borderColor: '#ff4d94', borderWidth: 2 }]
+        },
+        options: { scales: { r: { grid: { color: '#333' }, ticks: { display: false }, pointLabels: { color: '#888' } } }, plugins: { legend: { display: false } } }
+    });
+
+    document.getElementById('masterInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleInput(); });
+    init();
+</script>
+</body>
+</html>
