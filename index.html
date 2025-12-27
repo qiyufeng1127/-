@@ -72,9 +72,10 @@
         <div class="header">JARVIS CORE // <span>DEEP MEMORY</span></div>
         <div class="terminal" id="terminalBox">> 等待指令，先生。</div>
         <div class="input-bar">
-            <input type="text" id="chatInput" placeholder="输入汇报、吐槽或指令..." onkeypress="if(event.key==='Enter') sendChat()">
-            <button class="p-btn" onclick="sendChat()">SEND</button>
-        </div>
+    <input type="text" id="chatInput" placeholder="输入汇报、吐槽或指令..." onkeypress="if(event.key==='Enter') sendChat()">
+    <button class="p-btn" onclick="sendChat()">SEND</button>
+</div>
+<button class="p-btn" style="margin-top: 10px; width: 100%; background: var(--g); color: #000;" onclick="autoAssignMission()">贾维斯，建议我现在做什么？</button>
         <button class="p-btn" style="margin-top: 10px; background: transparent; color: var(--p); border: 1px solid var(--p);" onclick="stopAlarm()">解除系统警报</button>
     </div>
 
@@ -266,7 +267,54 @@
             localStorage.setItem('j23_memories', JSON.stringify(state.memories));
             localStorage.setItem('j23_shop', JSON.stringify(state.shop));
         }
+// --- 贾维斯主动派发任务逻辑 ---
+async function autoAssignMission() {
+    printTerminal("正在调取深度记忆并分析您的行为模式...");
+    
+    // 整理给 AI 的上下文：包括历史任务、记忆片段和当前金币
+    const context = {
+        historyMissions: state.missions.slice(0, 10).map(m => m.title),
+        recentMemories: state.memories.slice(0, 10).map(mem => mem.text),
+        currentCoins: state.coins
+    };
 
+    const prompt = `根据我的历史任务习惯：${JSON.stringify(context.historyMissions)}，以及我的心情和记忆：${JSON.stringify(context.recentMemories)}。
+    我现在不知道该干什么，请根据这些信息，为我量身定制一个当前最应该做的任务。
+    要求：
+    1. 必须符合我一贯的工作或生活风格。
+    2. 如果我最近很累，就安排一个轻巧的任务；如果我最近金币很少，就安排一个高收益任务。
+    3. 只返回 JSON 格式：{"title": "任务名称", "mins": 分钟数, "reason": "为什么要安排这个"}`;
+
+    try {
+        const res = await callAI(prompt);
+        const data = JSON.parse(res.match(/\{.*\}/s)[0]);
+
+        // 自动部署任务
+        const newM = {
+            id: Date.now(),
+            title: `[AI建议] ${data.title}`,
+            reward: Math.ceil(data.mins / 5),
+            secondsLeft: data.mins * 60,
+            done: false,
+            deployedAt: Date.now()
+        };
+        
+        state.missions.unshift(newM);
+        render();
+        
+        printTerminal(`<span style="color:var(--g)">贾维斯建议：${data.reason}</span>`);
+        printTerminal(`已为您自动部署任务：${data.title} (${data.mins}分钟)`);
+        
+        // 同样触发 60秒 督导警报
+        clearTimeout(alarmTimer);
+        alarmTimer = setTimeout(() => {
+            if(state.activeId !== newM.id) startAlarm();
+        }, 60000);
+        
+    } catch(e) {
+        printTerminal("分析失败，贾维斯建议您先休息 5 分钟。");
+    }
+}
         init();
     </script>
 </body>
