@@ -141,11 +141,11 @@
 
     async function complete(id) {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#FFFFFF'] });
-        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);等待_supabase.from   从('life_logs'   “life_logs”).update（{is_done: true, coins   硬币: 100}）。eq (id, id);
+        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);
         init();
     }
 
-    async function addMission() {addMission()}
+    async function addMission() {
         const c = document.getElementById('mTitle').value, t = document.getElementById('mTime').value;
         if(c) await _supabase.from('life_logs').insert([{ content: c, target_time: t, category: 'todo', is_done: false, coins: 0 }]);
         init();
@@ -172,7 +172,7 @@
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
             body: JSON.stringify({
                 model: "deepseek-chat",
-                messages: [{role: "system", content: "你是贾维斯。根据用户记忆分析他的习惯。要求：1. 称呼用户为先生。2. 玫粉色赛博风格语气。3. 给出今日任务的智能细碎拆解。4. 检查用户是否在浪费时间。"}, {role: "user", content: `记忆流：${mem}`}]
+                messages: [{role: "system", content: "你是贾维斯。根据用户记忆分析他的习惯。要求：1. 称呼用户为老板。2. 毒舌又温柔又幽默的语气。3. 给出今日任务的智能细碎拆解。4. 检查用户是否在浪费时间。"}, {role: "user", content: `记忆流：${mem}`}]
             })
         });
         const json = await res.json();
@@ -193,8 +193,8 @@
     }
 
     init();
-    const ctx = document.getElementById('radar').getContext('2d');const   常量 ctx = document   文档.getElementById('radar'   “雷达”).getContext('2d'   “二维”)；
+    const ctx = document.getElementById('radar').getContext('2d');
     new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(255, 0, 127, 0.2)', borderColor: '#FF007F', borderWidth: 2, pointRadius: 0 }] }, options: { scales: { r: { grid: { color: '#1a1a1c' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
-</script>   > < /脚本
-</body>   身体< / >
+</script>
+</body>
 </html>
