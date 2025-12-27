@@ -7,131 +7,106 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { 
-            --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; 
-            --blue: #00D2FF; --g: #FFD700; --text: #ffffff; 
-            --highlight: #FF6347; --border: #3d3d40;
-        }
+        :root { --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; --highlight: #FF6347; }
         
         body { 
             background: var(--bg); color: var(--text); 
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; 
+            font-family: 'PingFang SC', sans-serif; 
             margin: 0; display: grid; 
             grid-template-columns: 320px 1fr 380px; 
             height: 100vh; gap: 15px; padding: 15px; overflow: hidden; 
-            box-sizing: border-box;
         }
 
         .panel { 
-            background: var(--card); border-radius: 24px; 
-            padding: 20px; border: 1px solid var(--border); 
-            display: flex; flex-direction: column; position: relative; 
-            overflow: hidden;
+            background: var(--card); border-radius: 24px; padding: 20px; 
+            border: 1px solid #333; display: flex; flex-direction: column; 
+            position: relative; overflow: hidden;
         }
 
         .header { 
             font-size: 12px; text-transform: uppercase; letter-spacing: 2px; 
-            color: #777; margin-bottom: 15px; border-bottom: 1px solid #444; 
-            padding-bottom: 8px; flex-shrink: 0;
+            color: #777; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 8px; 
         }
         .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
 
-        /* 列表容器 */
-        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
-        .scroll-area::-webkit-scrollbar { width: 4px; }
-        .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-
-        /* 输入框样式 */
         .input-bar { 
-            background: #000; border: 1px solid #444; 
-            border-radius: 12px; padding: 8px; 
-            display: flex; gap: 8px; margin-top: 10px; flex-shrink: 0;
+            background: #000; border: 1px solid #444; border-radius: 12px; 
+            padding: 8px 12px; display: flex; gap: 8px; margin-top: 10px; 
         }
-        input { 
-            background: transparent; border: none; color: white; 
-            outline: none; font-size: 14px; flex: 1;
-        }
-        button.p-btn { 
-            background: var(--p); color: #000; border: none; 
-            padding: 8px 15px; border-radius: 8px; font-weight: bold; 
-            cursor: pointer; transition: 0.3s;
-        }
-        button.p-btn:hover { background: var(--highlight); transform: scale(1.05); }
 
-        /* 任务与商店卡片 */
-        .item-card {
-            background: #38383a; border-radius: 12px; padding: 12px;
-            margin-bottom: 10px; border-left: 4px solid var(--p);
-            display: flex; justify-content: space-between; align-items: center;
-            transition: 0.3s; cursor: pointer;
+        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; }
+        
+        .p-btn { 
+            background: var(--p); color: #000; border: none; border-radius: 12px;
+            font-weight: bold; cursor: pointer; transition: 0.3s; padding: 8px 15px;
         }
-        .item-card:hover { background: #444; transform: translateX(5px); }
-        .item-card.completed { border-left-color: #555; opacity: 0.6; }
+        .p-btn:hover { background: var(--highlight); transform: scale(1.05); }
 
-        /* 终端样式 */
         .terminal { 
-            flex: 1; background: #111; border: 1px solid #444; 
-            border-radius: 15px; padding: 15px; font-family: 'Courier New', monospace; 
-            font-size: 13px; color: var(--blue); line-height: 1.6; overflow-y: auto; 
+            flex: 1; background: #111; border: 1px solid #444; border-radius: 15px; 
+            padding: 15px; font-family: monospace; font-size: 12px; color: var(--blue); 
+            line-height: 1.6; overflow-y: auto; 
         }
 
-        @media (max-width: 1100px) { 
-            body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } 
-            .panel { height: 500px; }
+        .scroll-area { flex: 1; overflow-y: auto; }
+        .item-card {
+            background: #333; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid var(--p); transition: 0.3s;
         }
+        .item-card:hover { background: #444; }
+        .item-card.done { opacity: 0.5; border-left-color: #777; text-decoration: line-through; }
+
+        @media (max-width: 1024px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { height: 500px; } }
     </style>
 </head>
-<body>
-
+<body id="main">
     <div class="panel">
-        <div class="header">STATUS // <span>AGENT RANK: ALPHA</span></div>
-        <canvas id="radar" style="max-height: 160px;"></canvas>
-        
-        <div style="margin-top:20px;">
-            <div style="color:#555; font-size:10px;">AVAILABLE CREDITS</div>
-            <div style="font-size:32px; font-weight:bold; color:var(--g);">🪙 <span id="coinCount">1000</span></div>
+        <div class="header">STATUS // <span>AGENT RANK</span></div>
+        <canvas id="radar" style="max-height: 180px;"></canvas>
+        <div style="margin-top:15px;">
+            <div style="color:#555; font-size:10px;">CREDITS</div>
+            <div style="font-size:32px; font-weight:bold; color:var(--g);">🪙 <span id="coins">1000</span></div>
         </div>
-
         <div class="header" style="margin-top:20px;">DESIRE SHOP // <span>兑换</span></div>
         <div id="shopList" class="scroll-area"></div>
         <div class="input-bar">
+            <input type="text" id="shopIcon" placeholder="🎨" style="width:30px; flex:none;">
             <input type="text" id="shopName" placeholder="想兑换的事...">
-            <input type="number" id="shopPrice" placeholder="金币" style="width:60px;">
+            <input type="number" id="shopPrice" placeholder="金币" style="width:50px; flex:none;">
             <button class="p-btn" onclick="addShopItem()">+</button>
         </div>
     </div>
 
     <div class="panel">
-        <div class="header">TIMELINE // <span>CORE MISSIONS</span></div>
-        <div id="missionList" class="scroll-area"></div>
+        <div class="header">TIMELINE // <span>24H LOGGING</span></div>
+        <div id="timeline" class="scroll-area"></div>
         <div class="input-bar">
-            <input type="text" id="mTitle" placeholder="部署新任务...">
-            <input type="time" id="mTime" style="width:100px; color:white; background:transparent; border:none;">
+            <input type="text" id="mTitle" placeholder="发布新任务...">
+            <input type="time" id="mTime" style="width:100px; color: white;">
             <button class="p-btn" onclick="addMission()">DEPLOY</button>
         </div>
     </div>
 
     <div class="panel">
         <div class="header">JARVIS CORE // <span>INTELLIGENCE</span></div>
-        <div class="terminal" id="jarvisMsg">> 正在初始化深度记忆模块...<br>> 系统就绪。请输入指令。</div>
-        <div class="input-bar" style="margin-top:15px;">
-            <input type="text" id="chatInput" placeholder="汇报心情或工作..." onkeypress="if(event.key==='Enter') sendChat()">
-            <button class="p-btn" onclick="sendChat()">SEND</button>
+        <div class="terminal" id="jarvisMsg">> 正在等待深度记忆同步...</div>
+        <div class="input-bar">
+            <input type="text" id="chatInput" placeholder="输入心情、工作吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
         </div>
-        <button class="p-btn" style="margin-top:10px; width:100%; background:transparent; border:1px solid var(--p); color:var(--p);" onclick="analyzeSystem()">分析当前状态并提供建议</button>
+        <button class="p-btn" style="margin-top:10px;" onclick="askJarvis()">贾维斯，分析记忆并拆解任务</button>
     </div>
 
     <script>
-        // --- 核心数据状态 ---
+        // --- 核心配置 ---
+        const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
+        const API_URL = 'https://api.deepseek.com/chat/completions';
+
         let state = {
-            coins: parseInt(localStorage.getItem('jarvis_coins')) || 1000,
-            missions: JSON.parse(localStorage.getItem('jarvis_missions')) || [
-                { id: 1, title: "系统架构优化", time: "09:00", done: false },
-                { id: 2, title: "深度学习模型训练", time: "14:00", done: true }
-            ],
-            shop: JSON.parse(localStorage.getItem('jarvis_shop')) || [
-                { id: 1, name: "喝一杯奶茶", price: 200, icon: "🧋" },
-                { id: 2, name: "玩1小时游戏", price: 500, icon: "🎮" }
+            coins: parseInt(localStorage.getItem('j_coins')) || 1000,
+            missions: JSON.parse(localStorage.getItem('j_missions')) || [],
+            shop: JSON.parse(localStorage.getItem('j_shop')) || [
+                { name: "休息15分钟", price: 50, icon: "☕" }
             ]
         };
 
@@ -139,57 +114,53 @@
         function init() {
             renderAll();
             initRadar();
-            printTerminal("欢迎回来，先生。当前系统运行稳定。");
+            printTerminal("系统已上线。准备就绪，先生。");
         }
 
-        // --- 渲染逻辑 ---
         function renderAll() {
-            // 更新金币
-            document.getElementById('coinCount').innerText = state.coins;
-            localStorage.setItem('jarvis_coins', state.coins);
-
+            document.getElementById('coins').innerText = state.coins;
+            
             // 渲染任务
-            const mList = document.getElementById('missionList');
-            mList.innerHTML = state.missions.map(m => `
-                <div class="item-card ${m.done ? 'completed' : ''}" onclick="toggleMission(${m.id})">
-                    <div>
-                        <div style="font-size:14px;">${m.title}</div>
-                        <div style="font-size:10px; color:#777;">EXPECTED: ${m.time}</div>
-                    </div>
-                    <div style="color:${m.done ? '#555' : 'var(--p)'}">${m.done ? '✓' : '●'}</div>
+            const tLine = document.getElementById('timeline');
+            tLine.innerHTML = state.missions.map(m => `
+                <div class="item-card ${m.done ? 'done' : ''}" onclick="toggleMission(${m.id})">
+                    <div><b>${m.time}</b> | ${m.title}</div>
+                    <div>${m.done ? '✓' : '●'}</div>
                 </div>
             `).join('');
-            localStorage.setItem('jarvis_missions', JSON.stringify(state.missions));
 
             // 渲染商店
             const sList = document.getElementById('shopList');
-            sList.innerHTML = state.shop.map(s => `
-                <div class="item-card" onclick="buyItem(${s.id}, ${s.price})">
+            sList.innerHTML = state.shop.map((s, idx) => `
+                <div class="item-card" onclick="buyItem(${idx})">
                     <div>${s.icon || '🎁'} ${s.name}</div>
-                    <div style="color:var(--g); font-weight:bold;">-${s.price}</div>
+                    <div style="color:var(--g)">-${s.price}</div>
                 </div>
             `).join('');
-            localStorage.setItem('jarvis_shop', JSON.stringify(state.shop));
+
+            localStorage.setItem('j_coins', state.coins);
+            localStorage.setItem('j_missions', JSON.stringify(state.missions));
+            localStorage.setItem('j_shop', JSON.stringify(state.shop));
         }
 
-        // --- 交互逻辑 ---
+        // --- 业务逻辑 ---
         function addMission() {
             const title = document.getElementById('mTitle').value;
-            const time = document.getElementById('mTime').value || "12:00";
+            const time = document.getElementById('mTime').value || "ASAP";
             if (!title) return;
             state.missions.unshift({ id: Date.now(), title, time, done: false });
             document.getElementById('mTitle').value = '';
             renderAll();
-            printTerminal(`新任务已部署: ${title}`);
+            printTerminal(`新任务已部署到时间轴。`);
         }
 
         function toggleMission(id) {
             const m = state.missions.find(x => x.id === id);
             if (m && !m.done) {
                 m.done = true;
-                state.coins += 50; // 完成任务奖励
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#00D2FF'] });
-                printTerminal(`任务完成！获得 50 积分奖励。`);
+                state.coins += 100;
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                printTerminal("任务达成。奖励 100 金币。");
             } else if (m) {
                 m.done = false;
             }
@@ -199,78 +170,72 @@
         function addShopItem() {
             const name = document.getElementById('shopName').value;
             const price = parseInt(document.getElementById('shopPrice').value);
+            const icon = document.getElementById('shopIcon').value || "✨";
             if (!name || isNaN(price)) return;
-            state.shop.push({ id: Date.now(), name, price, icon: "✨" });
-            document.getElementById('shopName').value = '';
-            document.getElementById('shopPrice').value = '';
+            state.shop.push({ name, price, icon });
             renderAll();
         }
 
-        function buyItem(id, price) {
-            if (state.coins >= price) {
-                state.coins -= price;
-                printTerminal(`兑换成功。剩余积分: ${state.coins}`);
+        function buyItem(idx) {
+            const item = state.shop[idx];
+            if (state.coins >= item.price) {
+                state.coins -= item.price;
+                printTerminal(`成功兑换：${item.name}。祝您愉快，先生。`);
                 renderAll();
-                // 可以加个特殊特效
-                document.body.style.backgroundColor = "#222";
-                setTimeout(() => document.body.style.backgroundColor = var(--bg), 100);
             } else {
-                printTerminal("警告：积分不足，无法兑换该欲望。建议先完成任务。");
+                printTerminal("抱歉，金币不足。");
             }
         }
 
-        // --- AI 终端逻辑 ---
+        // --- AI 逻辑 ---
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value;
+            if (!msg) return;
+            printTerminal(`<span style="color:#fff">主人: ${msg}</span>`);
+            input.value = '';
+            await callDeepSeek(msg);
+        }
+
+        async function askJarvis() {
+            const missionStr = state.missions.filter(m => !m.done).map(m => m.title).join(', ');
+            const prompt = `我现在的待办任务有：${missionStr || '暂无'}。请帮我分析轻重缓急，并给出一句鼓励的话。`;
+            await callDeepSeek(prompt);
+        }
+
+        async function callDeepSeek(text) {
+            printTerminal("正在思考...");
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [{ role: "system", content: "你是贾维斯，科技感十足的管家。" }, { role: "user", content: text }]
+                    })
+                });
+                const data = await res.json();
+                printTerminal(`<span style="color:var(--blue)">JARVIS: ${data.choices[0].message.content}</span>`);
+            } catch (e) {
+                printTerminal("连接失败，请检查 API Key 状态。");
+            }
+        }
+
         function printTerminal(text) {
             const box = document.getElementById('jarvisMsg');
-            const newLine = document.createElement('div');
-            newLine.innerHTML = `> ${text}`;
-            box.appendChild(newLine);
+            box.innerHTML += `<div>> ${text}</div>`;
             box.scrollTop = box.scrollHeight;
         }
 
-        function sendChat() {
-            const input = document.getElementById('chatInput');
-            if (!input.value) return;
-            printTerminal(`<span style="color:#eee">${input.value}</span>`);
-            
-            // 模拟 AI 回复
-            setTimeout(() => {
-                const replies = [
-                    "记录已同步至云端。你的情绪波动处于正常范围内。",
-                    "分析中... 建议优先处理高优先级任务。",
-                    "明白。已更新你的心理档案。需要调整今日计划吗？",
-                    "加油，先生。你是最棒的。 (模拟情感反馈模块 V2.1)"
-                ];
-                printTerminal(replies[Math.floor(Math.random()*replies.length)]);
-            }, 600);
-            
-            input.value = '';
-        }
-
-        function analyzeSystem() {
-            const activeMissions = state.missions.filter(m => !m.done).length;
-            printTerminal(`系统分析报告：目前有 ${activeMissions} 个待办事项。建议先专注于最紧急的一项。`);
-        }
-
-        // --- 图表初始化 ---
         function initRadar() {
             const ctx = document.getElementById('radar').getContext('2d');
             new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['效率', '体能', '专注', '创意', '社交', '心态'],
-                    datasets: [{
-                        label: 'Agent Stats',
-                        data: [85, 60, 90, 75, 50, 80],
-                        backgroundColor: 'rgba(255, 0, 127, 0.2)',
-                        borderColor: '#FF007F',
-                        pointBackgroundColor: '#00D2FF'
-                    }]
+                    labels: ['效率', '专注', '创意', '心态', '体能'],
+                    datasets: [{ data: [80, 90, 70, 85, 60], borderColor: '#FF007F', backgroundColor: 'rgba(255,0,127,0.1)' }]
                 },
-                options: {
-                    scales: { r: { grid: { color: '#444' }, angleLines: { color: '#444' }, ticks: { display: false } } },
-                    plugins: { legend: { display: false } }
-                }
+                options: { plugins: { legend: { display: false } }, scales: { r: { grid: { color: '#444' }, ticks: { display: false } } } }
             });
         }
 
