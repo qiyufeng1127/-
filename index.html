@@ -1,106 +1,108 @@
-<!DOCTYPE html>   <！DOCTYPE html   超文本标记语言 >
-<html lang="zh-CN">   < html   超文本标记语言 lang   朗 = "应用" >
-<head>   < >负责人
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Great Me - 伟大之我 V13.5</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>< script   脚本 src = " https://cdn.jsdelivr.net
-pm/@supabase supabase-js@2 " > < /脚本>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>< script   脚本 src = " https://cdn.jsdelivr.net
-pm/chart.js " > < /脚本>
+    <title>Great Me - 伟大之我 V14.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root   根 { --bg: #f4f7fb; --card: #ffffff; --p: #ff4d94; --g: #ffb800; --blue: #339af0; }
-        * { box   盒子-sizing   分级: border   边境-box   盒子; }
-        body { background   背景: var(--bg); font   字体-family   家庭: -apple   苹果-system   系统, sans   没有-serif   衬线; margin   保证金: 0; display   显示: flex; justify-content   内容: center   中心; height: 100vh; padding: 20px; gap: 20px; color: #333; }
+        /* 核心科技感样式 */
+        :root { --bg: #050505; --card: #121214; --p: #ff4d94; --blue: #00d2ff; --g: #ffb800; --text: #e0e0e0; }
+        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 350px 1fr 350px; height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }
         
-        /* 响应式布局：手机自动堆叠，电脑横排 */
-        @media (max-width: 1000px) { body { flex-direction: column; height: auto; overflow-y: auto; } .panel { width: 100% !important; min-height: 400px; } }
+        @media (max-width: 1100px) { body { grid-template-columns: 1fr; height: auto; overflow-y: auto; } .panel { height: 500px; } }
 
-        .panel { background: var(--card); border-radius: 32px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: 0.3s; border: 1px solid rgba(0,0,0,0.02); }
-        .side { width: 320px; }
-        .main { flex: 1; }
+        .panel { background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .panel::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--p), transparent); }
 
-        h3 { font-size: 18px; margin-top: 0; display: flex; align-items: center; gap: 8px; }
-        
-        /* 气泡样式 */
-        .bubble { padding: 15px 20px; border-radius: 20px; margin-bottom: 12px; background: #f8f9fa; border-left: 5px solid #dee2e6; line-height: 1.5; font-size: 15px; animation: slideIn 0.3s ease; }
-        .pos { border-left-color: var(--blue); background: #e7f5ff; color: #1c7ed6; }
-        .neg { border-left-color: #ff6b6b; background: #fff5f5; color: #c92a2a; }
+        h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        h3::before { content: "●"; color: var(--p); font-size: 10px; }
 
-        /* 输入框 */
-        .input-bar { background: #f1f3f5; border-radius: 24px; padding: 5px 15px; display: flex; align-items: center; border: 2px solid transparent; }
-        .input-bar:focus-within { background: #fff; border-color: var(--p); box-shadow: 0 4px 12px rgba(255, 77, 148, 0.1); }
-        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; font-size: 16px; width: 100%; }
+        /* 气泡 - 霓虹效果 */
+        #dumpArea { flex: 1; overflow-y: auto; padding-right: 10px; margin: 15px 0; }
+        .bubble { padding: 15px; border-radius: 16px; margin-bottom: 12px; background: #1a1a1c; border-left: 4px solid #333; font-size: 14px; line-height: 1.6; animation: fadeIn 0.4s ease; transition: 0.3s; }
+        .bubble:hover { transform: translateX(5px); background: #222; }
+        .pos { border-left-color: var(--blue); box-shadow: inset 5px 0 15px rgba(0, 210, 255, 0.05); }
+        .neg { border-left-color: var(--p); box-shadow: inset 5px 0 15px rgba(255, 77, 148, 0.05); }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        #dumpArea { flex: 1; overflow-y: auto; padding-right: 5px; margin: 15px 0; }
-        #dumpArea::-webkit-scrollbar { width: 4px; }
-        #dumpArea::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+        /* 输入框 - 战时风格 */
+        .input-bar { background: #1a1a1c; border-radius: 12px; padding: 5px 15px; display: flex; border: 1px solid #333; transition: 0.3s; }
+        .input-bar:focus-within { border-color: var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; font-size: 15px; color: white; }
+
+        /* 状态看板 */
+        .stat-val { font-size: 32px; font-weight: 900; color: var(--g); text-shadow: 0 0 10px rgba(255, 184, 0, 0.3); }
+        .ai-text { font-size: 14px; color: #aaa; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px dashed #444; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="panel side">
-        <h3>📊 特工属性看板</h3>
-        <div style="flex:1; display:flex; align-items:center;"><canvas id="radar"></canvas></div>
-        <div style="background:#f8f9fa; padding:15px; border-radius:20px; font-size:13px; color:#666;">
-            状态：已连接云端同步<br>昨日执行率：65% ↑
+    <div class="panel">
+        <h3>System Status / 核心属性</h3>
+        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+            <canvas id="radar"></canvas>
+        </div>
+        <div style="margin-top:20px;">
+            <div style="color:#666; font-size:12px; margin-bottom:5px;">当前能量等级</div>
+            <div class="stat-val">LV. 12</div>
         </div>
     </div>
 
-    <div class="panel main">
+    <div class="panel" style="border-color: #333;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3>🧠 意识流捕捉</h3>
-            <span style="font-size:24px; font-weight:bold; color:var(--g);">🪙 <span id="coins">1000</span></span>
+            <h3>Brain Dump / 意识流</h3>
+            <div class="stat-val" style="font-size:20px;">🪙 <span id="coins">1000</span></div>
         </div>
         <div id="dumpArea"></div>
         <div class="input-bar">
-            <input type="text" id="masterInput" placeholder="在此捕捉灵感，回车自动同步...">
+            <input type="text" id="masterInput" placeholder="捕捉下一个赚钱灵感...">
         </div>
     </div>
 
-    <div class="panel side">
-        <h3>✨ AI 战略建议</h3>
-        <div id="aiStatus" style="font-size:15px; line-height:1.7; color:#555;">
-            正在监听您的“赚钱主线”... 请记录一些想法，我会为您分析。
+    <div class="panel">
+        <h3>AI Strategic / 战略建议</h3>
+        <div class="ai-text" id="aiStatus">
+            正在分析您的意识流数据... <br><br>
+            提示：记录一个“最小胜利”来提升今日执行率。
         </div>
-        <button onclick="location.reload()" style="margin-top:auto; padding:15px; border-radius:18px; border:none; background:var(--p); color:white; font-weight:bold; cursor:pointer;">刷新同步</button>
+        <div style="margin-top:auto;">
+            <button onclick="location.reload()" style="width:100%; padding:15px; border-radius:12px; border:1px solid var(--p); background:transparent; color:var(--p); font-weight:bold; cursor:pointer; transition:0.3s;">
+                同步全端记忆
+            </button>
+        </div>
     </div>
 
 <script>
-    // 配置云端
-    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co'；
-    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';const SUPABASE_KEY = ' sb_publishhable_jven8rbif0xupkl2ovhpqa_rywuijty '；
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);Const _supabase = supabase。createClient (SUPABASE_URL SUPABASE_KEY);
+    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 加载数据
     async function init() {   异步函数init() {
-        const { data, error } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
+        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });Const {data} = await _supabase.from('life_logs').select('*').order('created_at'，{升序：false})；
         if (data) {   If (data) {
             const area = document.getElementById('dumpArea');const area = document.getElementById('dumpArea')；
             area.innerHTML = '';
-            let currentCoins = 1000;
+            let totalCoins = 1000;   TotalCoins = 1000；
             data.forEach(log => {   数据。forEach(log => {
                 const div = document.createElement('div');const div = document.createElement('div')；
                 div.className = `bubble ${log.category || 'note'}`;div.className = ' bubble ${log.category || 'note'} '；
                 div.innerText = log.content;
                 area.appendChild(div);
-                currentCoins += (log.coins || 0);currentCoins = （log.）硬币|| 0)；
+                totalCoins += (log.coins || 0);totalCoins = (log。参考书| | 0);
             });
-            document.getElementById('coins').innerText = currentCoins;
+            document.getElementById('coins').innerText = totalCoins;
         }
     }
 
-    // 处理回车
     document.getElementById('masterInput').addEventListener('keypress', async (e) => {. getelementbyid(“masterInput”)。addEventListener('keypress', async (e) => {
         if (e.key === 'Enter' && e.target.value.trim()) {if (e.key === 'Enter' && e.target.value。削减()){
             const val = e.target.value;   const val = e.target.value；
-            let type = 'note';   Let type = 'note'；
-            let reward = 0;   设奖励= 0；
-            if (/(发|写|做|学|完成|小红书|拍|赚钱)/.test(val)) { type = 'pos'; reward = 50; }
-            else if (/(焦虑|拖延|不想|累)/.test(val)) { type = 'neg'; reward = -100; }
-            
+            let type = 'note'; let reward = 10;
+            if (/(做|写|发|赚|完成|学|拍)/.test(val)) { type = 'pos'; reward = 50; }
+            else if (/(累|烦|不想|难)/.test(val)) { type = 'neg'; reward = -20; }
             await _supabase.from('life_logs').insert([{ content: val, category: type, coins: reward }]);Await _supabase.from('life_logs').insert([{content: val, category: type, coins: reward}])；
             e.target.value = '';
             init();
@@ -109,21 +111,31 @@ pm/chart.js " > < /脚本>
 
     init();
 
-    // 绘制属性图
+    // 绘制酷炫暗黑雷达图
     const ctx = document.getElementById('radar').getContext('2d');const ctx = document.getElementById('radar').getContext('2d')；
     new Chart(ctx, {   新建图表(ctx, {
-        type: 'radar',
-        data: {
+        type: 'radar',   类型:“雷达”,
+        data: {   数据:{
             labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'],
-            datasets: [{
-                data: [65, 75, 50, 40, 85, 60],
-                backgroundColor: 'rgba(255, 77, 148, 0.15)',
-                borderColor: '#ff4d94',
-                borderWidth: 2,
-                pointRadius: 0
+            datasets: [{   数据集:[{
+                data: [70, 85, 60, 50, 90, 65],
+                backgroundColor: 'rgba(0, 210, 255, 0.2)',
+                borderColor: '#00d2ff',
+                borderWidth: 2,   borderWidth: 2
+                pointBackgroundColor: '#00d2ff'
             }]
         },
-        options: { scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' } } }, plugins: { legend: { display: false } } }
+        options: {
+            scales: {
+                r: {
+                    angleLines: { color: '#333' },
+                    grid: { color: '#333' },
+                    pointLabels: { color: '#888', font: { size: 12 } },
+                    ticks: { display: false }
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
     });
 </script>   > < /脚本
 </body>   身体< / >
