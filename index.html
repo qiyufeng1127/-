@@ -2,267 +2,279 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jarvis - Evolution System V2.6</title>
+    <title>Jarvis Station - Drag & DIY</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
             --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff;
-            --color-work: #FF4757;   /* 工作：红 */
-            --color-life: #70A1FF;   /* 生活：蓝 */
-            --color-fixed: #2ED573;  /* 固定：绿 */
-            --color-mood: #ECCC68;   /* 情绪：黄 */
+            --color-work: #FF4757; --color-life: #70A1FF; --color-fixed: #2ED573; --color-mood: #ECCC68;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
-        
-        .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #777; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; 
+            margin: 0; padding: 20px; height: 100vh; overflow: hidden;
+        }
+
+        /* 拖拽容器网格 */
+        #dropzone {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            height: 90vh;
+        }
+
+        /* 可拖拽面板基础样式 */
+        .panel { 
+            background: var(--card); border-radius: 24px; padding: 20px; 
+            border: 1px solid #333; display: flex; flex-direction: column; 
+            height: 100%; position: relative;
+            cursor: grab; transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            user-select: none;
+        }
+        .panel:active { cursor: grabbing; transform: scale(1.02); z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .panel.dragging { opacity: 0.5; background: #3a3a3c; border: 2px dashed var(--p); }
+
+        .header { 
+            font-size: 11px; text-transform: uppercase; letter-spacing: 2px; 
+            color: #777; margin-bottom: 15px; border-bottom: 1px solid #444; 
+            padding-bottom: 5px; pointer-events: none;
+        }
         .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
-        
-        /* 周期任务样式 */
-        .routine-card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; margin-bottom: 8px; border-left: 3px solid var(--color-fixed); }
-        .routine-card input[type="time"] { background: transparent; border: none; color: var(--g); font-family: monospace; cursor: pointer; }
 
-        /* 时间轴核心样式 */
-        .timeline-container { position: relative; padding-left: 40px; border-left: 2px solid #444; margin-left: 20px; }
-        .timeline-item { position: relative; margin-bottom: 30px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; transition: 0.3s; }
-        .timeline-item::before { 
-            content: attr(data-icon); position: absolute; left: -54px; top: 12px; 
-            width: 28px; height: 28px; background: var(--bg); border: 2px solid;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
+        /* 内容区取消拖拽感，防止无法输入 */
+        .content-inner { flex: 1; display: flex; flex-direction: column; overflow: hidden; cursor: default; }
+
+        /* 金币商店 */
+        .shop-item { 
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; 
+            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid var(--g);
         }
-        .timeline-item.active { border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
 
-        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
+        /* 时间轴 */
+        .timeline-container { position: relative; padding-left: 30px; border-left: 2px solid #444; margin-left: 10px; }
+        .timeline-node { position: relative; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .timeline-node::before {
+            content: "📍"; position: absolute; left: -42px; top: 10px;
+            width: 22px; height: 22px; background: var(--bg); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 12px;
+        }
+
+        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
+        .scroll-area::-webkit-scrollbar { width: 0; }
+
         .input-bar { background: #000; border: 1px solid #444; border-radius: 12px; padding: 8px 12px; display: flex; gap: 8px; margin-top: 10px; }
-        input, select { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
-        
+        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
         .p-btn { background: var(--p); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; padding: 8px 12px; font-size: 11px; }
         .terminal { flex: 1; background: #111; border-radius: 15px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; }
-        
-        /* 冲突高亮 */
-        .conflict-tag { color: #ff4757; font-size: 10px; font-weight: bold; margin-left: 5px; animation: flash 1s infinite; }
-        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div class="panel">
-        <div class="header">STATUS // <span>ROUTINES & ASSETS</span></div>
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div style="font-size:32px; color:var(--g); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <div style="width:24px;height:24px;background:var(--g);border-radius:50%;color:#000;font-size:14px;display:flex;align-items:center;justify-content:center;">C</div>
-                <span id="coinsDisplay">0</span>
+    <div id="dropzone">
+        <div class="panel" draggable="true" id="mod-shop">
+            <div class="header">ASSETS & SHOP // <span>MARKET</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size:32px; color:var(--g); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="width:24px;height:24px;background:var(--g);border-radius:50%;color:#000;font-size:14px;display:flex;align-items:center;justify-content:center;font-weight:900">C</div>
+                        <span id="coinsDisplay">0</span>
+                    </div>
+                    <div style="font-size:11px; color:#777; margin-top:5px;">可兑换额度: <span id="timeDisplay">0</span> MIN</div>
+                </div>
+                <div class="scroll-area" id="shopList"></div>
+                <div class="input-bar">
+                    <input type="text" id="shopName" placeholder="新奖励...">
+                    <input type="number" id="shopCost" placeholder="C" style="width:40px">
+                    <button class="p-btn" onclick="addShopItem()">+</button>
+                </div>
             </div>
-            <div style="font-size:11px; color:#666; margin-top:5px;">自由额度: <span id="timeDisplay">0</span> MIN</div>
         </div>
 
-        <div class="header">DAILY ROUTINES // <span>周期任务</span></div>
-        <div id="routineList" class="scroll-area"></div>
-        <div class="input-bar">
-            <input type="time" id="rTime" value="20:00">
-            <input type="text" id="rTitle" placeholder="固定任务...">
-            <button class="p-btn" onclick="addRoutine()">+</button>
+        <div class="panel" draggable="true" id="mod-routine">
+            <div class="header">DAILY ROUTINES // <span>FIXED</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="scroll-area" id="routineList"></div>
+                <div class="input-bar">
+                    <input type="time" id="rTime" value="20:00">
+                    <input type="text" id="rTitle" placeholder="固定任务...">
+                    <button class="p-btn" onclick="addRoutine()">ADD</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="panel">
-        <div class="header">TIMELINE // <span>SMART MONITORING</span></div>
-        <div id="timelineScroll" class="scroll-area">
-            <div id="timelineList" class="timeline-container"></div>
+        <div class="panel" draggable="true" id="mod-timeline">
+            <div class="header">TIMELINE // <span>LIVE TRACK</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="scroll-area">
+                    <div class="timeline-container" id="timelineList"></div>
+                </div>
+                <div class="input-bar">
+                    <input type="text" id="mTitle" placeholder="输入当前想法或任务...">
+                    <button class="p-btn" onclick="deployMission()">DEPLOY</button>
+                </div>
+            </div>
         </div>
-        <div class="input-bar">
-            <input type="text" id="mTitle" placeholder="碎碎念、心情或新任务...">
-            <button class="p-btn" onclick="deployMission()">DEPLOY</button>
-        </div>
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('daily')">日报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('weekly')">周报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="generateReport('monthly')">月报</button>
-        </div>
-    </div>
 
-    <div class="panel">
-        <div class="header">JARVIS CORE // <span>BRAIN</span></div>
-        <div class="terminal" id="terminalBox">> SYSTEM READY...</div>
-        <div class="input-bar">
-            <input type="text" id="chatInput" placeholder="在此汇报进度或吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
-            <button class="p-btn" onclick="sendChat()">SEND</button>
+        <div class="panel" draggable="true" id="mod-brain">
+            <div class="header">JARVIS BRAIN // <span>CORE</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="terminal" id="terminalBox">> 拖拽功能已激活。按住面板空白处即可移动。</div>
+                <div class="input-bar">
+                    <input type="text" id="chatInput" placeholder="输入指令..." onkeypress="if(event.key==='Enter') sendChat()">
+                    <button class="p-btn" onclick="sendChat()">SEND</button>
+                </div>
+                <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000; width: 100%;" onclick="printTerminal('正在深度分析布局有效性...')">贾维斯，建议当前做什么？</button>
+            </div>
         </div>
-        <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000; width: 100%;" onclick="aiSuggestion()">贾维斯，建议我现在做什么？</button>
     </div>
 
     <script>
         const API_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
         const API_URL = 'https://api.deepseek.com/chat/completions';
 
-        // 颜色图标映射表
-        const typeStyles = {
-            work: { color: "var(--color-work)", icon: "⚒️" },
-            life: { color: "var(--color-life)", icon: "☕" },
-            fixed: { color: "var(--color-fixed)", icon: "📅" },
-            mood: { color: "var(--color-mood)", icon: "💭" }
-        };
-
         let state = {
-            coins: parseInt(localStorage.getItem('j_v26_coins')) || 1000,
-            routines: JSON.parse(localStorage.getItem('j_v26_routines')) || [
-                { id: 1, time: "20:00", title: "发小红书", type: 'fixed' }
-            ],
-            missions: JSON.parse(localStorage.getItem('j_v26_missions')) || [],
-            activeId: null
+            coins: parseInt(localStorage.getItem('j_drag_coins')) || 800,
+            shop: JSON.parse(localStorage.getItem('j_drag_shop')) || [{name: "刷视频 30min", cost: 100}],
+            routines: JSON.parse(localStorage.getItem('j_drag_routines')) || [],
+            missions: JSON.parse(localStorage.getItem('j_drag_missions')) || []
         };
 
         function init() {
             render();
-            setInterval(tick, 1000);
-            printTerminal("固定任务引擎已启动，多色时间轴已同步。");
+            setupDraggable();
+            printTerminal("系统就绪。您可以直接拖动四个面板进行布局 DIY。");
         }
 
-        // --- 周期任务逻辑 ---
-        function addRoutine() {
-            const time = document.getElementById('rTime').value;
-            const title = document.getElementById('rTitle').value;
-            if(!title) return;
-            state.routines.push({ id: Date.now(), time, title, type: 'fixed' });
-            render();
-            save();
+        // --- 核心拖拽逻辑 ---
+        function setupDraggable() {
+            const dropzone = document.getElementById('dropzone');
+            const panels = document.querySelectorAll('.panel');
+
+            panels.forEach(panel => {
+                panel.addEventListener('dragstart', () => {
+                    panel.classList.add('dragging');
+                });
+
+                panel.addEventListener('dragend', () => {
+                    panel.classList.remove('dragging');
+                    // 保存新顺序到本地（可选）
+                    saveOrder();
+                });
+            });
+
+            dropzone.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(dropzone, e.clientX);
+                const dragging = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    dropzone.appendChild(dragging);
+                } else {
+                    dropzone.insertBefore(dragging, afterElement);
+                }
+            });
         }
 
-        function removeRoutine(id) {
-            state.routines = state.routines.filter(r => r.id !== id);
-            render();
-            save();
+        function getDragAfterElement(container, x) {
+            const draggableElements = [...container.querySelectorAll('.panel:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = x - box.left - box.width / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // --- 核心渲染：包含冲突检测的时间轴 ---
+        function saveOrder() {
+            const order = [...document.querySelectorAll('.panel')].map(p => p.id);
+            localStorage.setItem('j_drag_order', JSON.stringify(order));
+        }
+
+        // --- 业务逻辑 ---
         function render() {
             document.getElementById('coinsDisplay').innerText = state.coins;
             document.getElementById('timeDisplay').innerText = state.coins * 5;
 
-            // 渲染固定任务列表
-            const rList = document.getElementById('routineList');
-            rList.innerHTML = state.routines.map(r => `
-                <div class="routine-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <input type="time" value="${r.time}" onchange="updateRoutineTime(${r.id}, this.value)">
-                        <span style="font-size:12px; font-weight:bold;">${r.title}</span>
-                        <span style="cursor:pointer; color:#777;" onclick="removeRoutine(${r.id})">×</span>
-                    </div>
+            document.getElementById('shopList').innerHTML = state.shop.map(item => `
+                <div class="shop-item">
+                    <span style="font-weight:bold;">${item.name}</span>
+                    <button class="p-btn" style="background:var(--g)" onclick="buyItem(${item.cost}, '${item.name}')">${item.cost}C</button>
                 </div>
             `).join('');
 
-            // 渲染时间轴
-            const tList = document.getElementById('timelineList');
-            // 合并当前任务与今日周期任务用于显示
-            let combinedNodes = [
-                ...state.missions.map(m => ({ ...m, isMission: true })),
-                ...state.routines.map(r => ({ ...r, isRoutine: true, startTime: r.time }))
-            ];
+            document.getElementById('routineList').innerHTML = state.routines.map(r => `
+                <div class="shop-item" style="border-left-color:var(--color-fixed)">
+                    <span style="color:var(--g); font-family:monospace; margin-right:10px;">[${r.time}]</span>
+                    <span style="flex:1;">${r.title}</span>
+                </div>
+            `).join('');
 
-            // 按时间排序（最近的在上面）
-            combinedNodes.sort((a,b) => (b.startTime || "00:00") > (a.startTime || "00:00") ? 1 : -1);
-
-            tList.innerHTML = combinedNodes.map(node => {
-                const style = typeStyles[node.type || 'work'];
-                return `
-                    <div class="timeline-item ${node.id === state.activeId ? 'active' : ''}" 
-                         data-icon="${node.icon || style.icon}" 
-                         style="border-left: 4px solid ${style.color}; border-color: ${style.color}">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:10px; color:#777;">${node.startTime || 'NOW'}</span>
-                            ${node.isRoutine ? '<span class="conflict-tag">DAILY</span>' : ''}
-                        </div>
-                        <div style="margin-top:5px; cursor:pointer;" onclick="${node.isMission ? `toggleMission(${node.id})` : ''}">
-                            <b style="color:${style.color}">${node.title}</b>
-                            ${node.isMission ? `<span style="font-size:12px; color:var(--blue); float:right;">${formatTime(node.secondsLeft)}</span>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            document.getElementById('timelineList').innerHTML = state.missions.map(m => `
+                <div class="timeline-node">
+                    <div style="font-size:10px; color:#777;">${m.time}</div>
+                    <div style="font-size:13px; margin-top:4px;">${m.title}</div>
+                </div>
+            `).join('');
             save();
         }
 
-        // --- 智能冲突检测部署 ---
-        async function deployMission() {
-            const input = document.getElementById('mTitle').value;
-            if(!input) return;
-
-            printTerminal(`贾维斯正在分析任务属性并检测潜在时间冲突...`);
-            
-            // AI 语义分析：类别、时长、图标
-            const prompt = `分析输入: "${input}"。
-            1. 预估需要多少分钟(数字)。
-            2. 类别(work/life/mood)。
-            3. 如果现在是 ${new Date().toLocaleTimeString()}，参考固定任务 ${JSON.stringify(state.routines)}，
-               如有时间重叠，请简述如何[延后]或[切分]建议。
-            返回严格JSON: {"mins":数字, "type":"类别", "icon":"图标", "advice":"建议内容"}`;
-
-            try {
-                const res = await callAI(prompt);
-                const data = JSON.parse(res.match(/\{.*\}/s)[0]);
-                
-                const now = new Date();
-                const startTimeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-
-                const newM = {
-                    id: Date.now(),
-                    title: input,
-                    startTime: startTimeStr,
-                    secondsLeft: data.mins * 60,
-                    reward: Math.ceil(data.mins / 5),
-                    type: data.type,
-                    icon: data.icon,
-                    done: false
-                };
-
-                state.missions.unshift(newM);
-                document.getElementById('mTitle').value = '';
-                printTerminal(`贾维斯：任务已加入。建议：${data.advice}`);
+        function addShopItem() {
+            const name = document.getElementById('shopName').value;
+            const cost = parseInt(document.getElementById('shopCost').value);
+            if(name && cost) {
+                state.shop.push({name, cost});
                 render();
-            } catch(e) { 
-                printTerminal("分析引擎波动，已执行默认部署。");
-                // 默认部署回退
             }
         }
 
-        // --- 基础工具函数 ---
-        function tick() {
-            if(state.activeId) {
-                const m = state.missions.find(x => x.id === state.activeId);
-                if(m && m.secondsLeft > 0) {
-                    m.secondsLeft--;
-                    if(m.secondsLeft % 10 === 0) render();
-                } else if(m && m.secondsLeft <= 0) {
-                    m.done = true; state.coins += m.reward; state.activeId = null;
-                    confetti({particleCount: 150}); render();
-                }
+        function buyItem(cost, name) {
+            if(state.coins >= cost) {
+                state.coins -= cost;
+                confetti({ particleCount: 150, origin: { y: 0.7 } });
+                printTerminal(`兑换成功: ${name}`);
+                render();
+            } else {
+                printTerminal("警告: 金币不足，请继续执行任务获取酬劳。");
             }
         }
 
-        function toggleMission(id) {
-            state.activeId = (state.activeId === id) ? null : id;
+        function addRoutine() {
+            const time = document.getElementById('rTime').value;
+            const title = document.getElementById('rTitle').value;
+            if(title) {
+                state.routines.push({time, title});
+                render();
+            }
+        }
+
+        function deployMission() {
+            const title = document.getElementById('mTitle').value;
+            if(!title) return;
+            const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            state.missions.unshift({title, time: now});
+            document.getElementById('mTitle').value = '';
             render();
         }
 
-        async function callAI(p) {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是人工智能管家贾维斯。"},{role:"user",content:p}] })
-            });
-            const d = await res.json(); return d.choices[0].message.content;
+        function save() {
+            localStorage.setItem('j_drag_coins', state.coins);
+            localStorage.setItem('j_drag_shop', JSON.stringify(state.shop));
+            localStorage.setItem('j_drag_routines', JSON.stringify(state.routines));
+            localStorage.setItem('j_drag_missions', JSON.stringify(state.missions));
         }
 
-        function formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
-        function printTerminal(t) { const b = document.getElementById('terminalBox'); b.innerHTML += `<div>> ${t}</div>`; b.scrollTop = b.scrollHeight; }
-        function save() { localStorage.setItem('j_v26_coins', state.coins); localStorage.setItem('j_v26_missions', JSON.stringify(state.missions)); localStorage.setItem('j_v26_routines', JSON.stringify(state.routines)); }
+        function printTerminal(t) {
+            const b = document.getElementById('terminalBox');
+            b.innerHTML += `<div>> ${t}</div>`;
+            b.scrollTop = b.scrollHeight;
+        }
 
         async function sendChat() {
             const i = document.getElementById('chatInput'); if(!i.value) return;
             printTerminal(`主人: ${i.value}`);
-            const r = await callAI(`主人说: "${i.value}"。请以管家贾维斯的语气回复。`);
-            printTerminal(`JARVIS: ${r}`); i.value = '';
+            i.value = '';
         }
 
         init();
