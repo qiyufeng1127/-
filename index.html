@@ -8,9 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --bg: #1A1A1C; --card: #2C2C2E; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; --highlight: #FF6347; }
-        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
+        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; transition: background 0.1s; }
         
-        /* 极致爆闪 */
+        /* 极致爆闪动画 */
         @keyframes emergency-red { 0% { background: #000; } 50% { background: #ff0000; } 100% { background: #000; } }
         .emergency-active { animation: emergency-red 0.1s infinite !important; }
         .emergency-active .panel { opacity: 0.1; }
@@ -19,6 +19,10 @@
         .header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #777; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
         .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
         
+        /* 纯 CSS 金币图标 */
+        .coin-icon { width: 24px; height: 24px; background: var(--g); border-radius: 50%; position: relative; box-shadow: 0 0 10px var(--g); display: inline-block; flex-shrink: 0; }
+        .coin-icon::after { content: 'C'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; font-size: 14px; font-weight: 900; }
+
         .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
         .item-card { background: #333; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--p); transition: 0.3s; position: relative; }
         .item-card.running { border-left-color: var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
@@ -30,37 +34,41 @@
         .p-btn { background: var(--p); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; padding: 8px 12px; font-size: 11px; }
         
         /* 报表遮罩层 */
-        #reportOverlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 9999; display: none; 
-            flex-direction: column; padding: 50px; align-items: center; overflow-y: auto;
-        }
-        .report-content { max-width: 800px; width: 100%; color: #fff; line-height: 1.6; }
+        #reportOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: none; flex-direction: column; padding: 50px; align-items: center; overflow-y: auto; }
+        .report-content { max-width: 800px; width: 100%; color: #fff; line-height: 1.6; font-size: 14px; background: #222; padding: 30px; border-radius: 20px; border: 1px solid var(--p); }
 
         .terminal { flex: 1; background: #111; border-radius: 15px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; }
         .timer-text { font-family: monospace; font-size: 18px; color: var(--blue); font-weight: bold; }
+        
         .step-item { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 4px; }
-        .step-input { flex: 1; background: transparent; border: none; color: #aaa; font-size: 12px; outline: none; }
+        .step-input { flex: 1; background: transparent; border: none; color: #aaa; font-size: 12px; outline: none; border-bottom: 1px solid transparent; }
+        .step-input:focus { border-bottom: 1px solid var(--blue); color: #fff; }
+        .check-box { cursor: pointer; color: var(--p); font-weight: bold; font-family: monospace; }
     </style>
 </head>
 <body onclick="stopAlarmInterference()">
 
     <div id="reportOverlay">
-        <button class="p-btn" style="align-self: flex-end;" onclick="closeReport()">关闭报告 [ESC]</button>
+        <button class="p-btn" style="align-self: flex-end; margin-bottom: 20px;" onclick="closeReport()">关闭报告 [ESC]</button>
         <div class="report-content" id="reportData"></div>
     </div>
 
     <div class="panel">
         <div class="header">STATUS // <span>CORE ASSETS</span></div>
         <div style="text-align: center; margin-bottom: 15px;">
-            <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">0</span></div>
-            <div style="font-size:10px; color:#666;">⏳ 自由额度: <span id="timeDisplay">0</span> 分钟</div>
+            <div style="font-size:32px; color:var(--g); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                <div class="coin-icon"></div>
+                <span id="coinsDisplay">0</span>
+            </div>
+            <div style="font-size:11px; color:#777; margin-top: 5px;">
+                [TIME] 自由额度: <span id="timeDisplay">0</span> MIN
+            </div>
         </div>
         <div class="header">SHOP // <span>REWARDS</span></div>
         <div id="shopList" class="scroll-area"></div>
         <div class="input-bar">
             <input type="text" id="shopName" placeholder="自由活动...">
-            <input type="number" id="shopMins" placeholder="分钟" style="width:40px">
+            <input type="number" id="shopMins" placeholder="MIN" style="width:45px">
             <button class="p-btn" onclick="addShopItem()">+</button>
         </div>
     </div>
@@ -69,24 +77,24 @@
         <div class="header">TIMELINE // <span>MONITORING</span></div>
         <div id="missionList" class="scroll-area"></div>
         <div class="input-bar">
-            <input type="text" id="mTitle" placeholder="新任务...">
-            <button class="p-btn" onclick="deploySmartMission()">部署任务</button>
+            <input type="text" id="mTitle" placeholder="新任务名称...">
+            <button class="p-btn" onclick="deploySmartMission()">DEPLOY</button>
         </div>
         <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('daily')">📊 日报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('weekly')">📅 周报</button>
-            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('monthly')">🏆 月报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('daily')">日报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('weekly')">周报</button>
+            <button class="p-btn" style="flex:1; background:#444; color:#fff" onclick="realReport('monthly')">月报</button>
         </div>
     </div>
 
     <div class="panel">
         <div class="header">JARVIS CORE // <span>BRAIN</span></div>
-        <div class="terminal" id="terminalBox">> 监听中...</div>
+        <div class="terminal" id="terminalBox">> SYSTEM READY...</div>
         <div class="input-bar">
-            <input type="text" id="chatInput" placeholder="汇报进度或吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
+            <input type="text" id="chatInput" placeholder="输入指令或汇报习惯..." onkeypress="if(event.key==='Enter') sendChat()">
             <button class="p-btn" onclick="sendChat()">SEND</button>
         </div>
-        <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000;" onclick="autoAssignMission()">贾维斯，建议我现在做什么？</button>
+        <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000; width: 100%;" onclick="autoAssignMission()">贾维斯，建议我现在做什么？</button>
     </div>
 
     <audio id="alarmSfx" loop src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"></audio>
@@ -99,7 +107,7 @@
             coins: parseInt(localStorage.getItem('j_v25_coins')) || 1000,
             missions: JSON.parse(localStorage.getItem('j_v25_missions')) || [],
             memories: JSON.parse(localStorage.getItem('j_v25_memories')) || [],
-            learningMemories: JSON.parse(localStorage.getItem('j_v24_learning')) || [],
+            learningMemories: JSON.parse(localStorage.getItem('j_v25_learning')) || [],
             shop: JSON.parse(localStorage.getItem('j_v25_shop')) || [],
             activeId: null
         };
@@ -112,7 +120,7 @@
             render();
             setInterval(tick, 1000);
             Notification.requestPermission();
-            printTerminal("Jarvis 系统已上线。全域督导模式激活。");
+            printTerminal("系统初始化完成。金币图标已切换为 CSS 渲染模式。");
         }
 
         function render() {
@@ -124,17 +132,17 @@
                 <div class="item-card ${m.id === state.activeId ? 'running' : ''} ${m.done ? 'done' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="flex:1; cursor:pointer;" onclick="toggleMission(${m.id})">
-                            <b style="color:var(--g)">[${m.reward}🪙]</b> ${m.title}
+                            <b style="color:var(--g)">[${m.reward}C]</b> ${m.title}
                         </span>
                         <div class="timer-text">${formatTime(m.secondsLeft)}</div>
                     </div>
                     ${m.steps ? m.steps.map((s, idx) => `
                         <div class="step-item">
-                            <span style="cursor:pointer" onclick="completeStep(${m.id}, ${idx})">${s.completed ? '✅' : '⭕'}</span>
+                            <span class="check-box" onclick="completeStep(${m.id}, ${idx})">${s.completed ? '[V]' : '[O]'}</span>
                             <input type="text" class="step-input" value="${s.desc}" onchange="editAndLearnStep(${m.id}, ${idx}, this.value)">
                         </div>
                     `).join('') : ''}
-                    ${!m.steps && !m.done ? `<button class="p-btn" style="margin-top:10px; width:100%; background:var(--blue)" onclick="breakdownMission(${m.id})">拆解任务并学习</button>` : ''}
+                    ${!m.steps && !m.done ? `<button class="p-btn" style="margin-top:10px; width:100%; background:var(--blue)" onclick="breakdownMission(${m.id})">拆解并开启督导</button>` : ''}
                 </div>
             `).join('');
             save();
@@ -145,42 +153,38 @@
             const overlay = document.getElementById('reportOverlay');
             const dataBox = document.getElementById('reportData');
             overlay.style.display = 'flex';
-            dataBox.innerHTML = `<h2>正在生成 ${type === 'daily' ? '日报' : type === 'weekly' ? '周报' : '月报'}...</h2><p>贾维斯正在扫描您的行为模式和金币流动...</p>`;
+            dataBox.innerHTML = `<h2>正在生成 ${type.toUpperCase()} REPORT...</h2><p>贾维斯正在扫描您的行为记录和金币流水...</p>`;
             
             const history = state.missions.slice(0, 15);
-            const prompt = `你现在是贾维斯。请根据以下数据写一份${type}报告。数据：${JSON.stringify(history)}。
-            要求：1. 使用Markdown格式。2. 包含一个今日金句。3. 语气要像个严厉但忠诚的管家。4. 分析主人的效率。`;
+            const prompt = `你是人工智能管家贾维斯。请根据数据生成一份${type}分析报告：${JSON.stringify(history)}。要求：使用Markdown，语气冷酷但忠诚，必须包含主人的进步分析和今日建议。`;
 
-            const res = await callAI(prompt);
-            dataBox.innerHTML = `<div style="text-align:left">${res.replace(/\n/g, '<br>')}</div>`;
+            try {
+                const res = await callAI(prompt);
+                dataBox.innerHTML = `<div style="text-align:left; white-space: pre-wrap;">${res}</div>`;
+            } catch(e) { dataBox.innerHTML = "报告生成失败，请检查网络连接。"; }
         }
 
         function closeReport() { document.getElementById('reportOverlay').style.display = 'none'; }
 
-        // --- 强制警报（全网页生效） ---
+        // --- 强制警报（防逃避） ---
         function startAlarm() {
             document.body.classList.add('emergency-active');
             document.getElementById('alarmSfx').play();
             
-            // 1. 标题爆闪
             if(!titleInterval) {
                 titleInterval = setInterval(() => {
-                    document.title = document.title.includes("🚨") ? "【！！任务待命！！】" : "【🚨 发现逃避行为 🚨】";
+                    document.title = document.title.includes("!!!") ? "[ MISSION WAITING ]" : "[ !!! WARNING !!! ]";
                 }, 100);
             }
 
-            // 2. 强力通知
             if(Notification.permission === "granted") {
-                new Notification("🚨 贾维斯督导：检测到您正在游荡！", { body: "任务已停滞 60 秒，请立即回到工作站完成第一个步骤！" });
+                new Notification("🚨 贾维斯督导：检测到无效游荡！", { body: "任务已停滞，请立即返回工作站！" });
             }
 
-            // 3. 阻塞干扰（如果你不在本网页，弹窗会强制让任务栏闪烁）
             if(!interferenceInterval) {
                 interferenceInterval = setInterval(() => {
-                    if (document.hidden) { // 如果你不在这个标签页
-                        console.error("DETECTED ESCAPE");
-                        // 这是一个虽然烦人但极度有效的方法，强制让浏览器获得焦点
-                        alert("🚨 贾维斯警告：任务正在等待！请勿离开！");
+                    if (document.hidden) {
+                        alert("!!! 警告：检测到逃避行为 !!!\n请立即返回完成任务步骤！");
                     }
                 }, 3000);
             }
@@ -193,19 +197,19 @@
             clearInterval(interferenceInterval);
             titleInterval = null;
             interferenceInterval = null;
-            document.title = "Jarvis - Focus Mode";
+            document.title = "Jarvis - Active";
         }
 
-        // --- 基础逻辑修复 ---
+        // --- 核心逻辑 ---
         function tick() {
             if(state.activeId) {
                 const m = state.missions.find(x => x.id === state.activeId);
                 if(m && m.secondsLeft > 0) {
                     m.secondsLeft--;
                     document.title = `[${formatTime(m.secondsLeft)}] ${m.title}`;
-                    if(m.secondsLeft % 10 === 0) render();
                 } else if(m && m.secondsLeft <= 0 && !m.done) {
                     m.done = true; state.coins += m.reward; state.activeId = null;
+                    document.title = "MISSION COMPLETE";
                     confetti({particleCount: 150}); render();
                 }
             }
@@ -214,7 +218,7 @@
         async function deploySmartMission() {
             const title = document.getElementById('mTitle').value;
             if(!title) return;
-            printTerminal(`正在评估任务量...`);
+            printTerminal(`正在评估 [${title}] 的工程量...`);
             const res = await callAI(`估算任务 "${title}" 的时间。返回JSON: {"mins":数字}`);
             try {
                 const data = JSON.parse(res.match(/\{.*\}/s)[0]);
@@ -223,7 +227,7 @@
                 document.getElementById('mTitle').value = '';
                 render();
                 resetAlarmTimer(newM.id);
-            } catch(e) { printTerminal("部署失败。"); }
+            } catch(e) { printTerminal("评估异常。"); }
         }
 
         function resetAlarmTimer(id) {
@@ -246,15 +250,49 @@
             if(m) {
                 m.steps[sIdx].completed = true;
                 stopAlarmInterference();
+                printTerminal(`步骤已完成。督导警报暂时解除。`);
                 render();
             }
+        }
+
+        function editAndLearnStep(mId, sIdx, val) {
+            const m = state.missions.find(x => x.id === mId);
+            if(m) {
+                m.steps[sIdx].desc = val;
+                state.learningMemories.push({ action: `修改步骤: ${val}`, time: Date.now() });
+                save();
+            }
+        }
+
+        async function autoAssignMission() {
+            printTerminal("正在根据历史记录分配任务...");
+            const context = { history: state.missions.slice(0,5).map(m=>m.title), memories: state.memories.slice(0,5).map(m=>m.text) };
+            const res = await callAI(`参考习惯 ${JSON.stringify(context.history)}，建议一个任务。返回JSON: {"title":"名","mins":分,"reason":"理"}`);
+            try {
+                const data = JSON.parse(res.match(/\{.*\}/s)[0]);
+                const newM = { id: Date.now(), title: `[建议] ${data.title}`, reward: Math.ceil(data.mins / 5), secondsLeft: data.mins * 60, done: false };
+                state.missions.unshift(newM);
+                render();
+                printTerminal(`建议理由: ${data.reason}`);
+                resetAlarmTimer(newM.id);
+            } catch(e) {}
+        }
+
+        async function breakdownMission(id) {
+            const m = state.missions.find(x => x.id === id);
+            printTerminal("正在根据您的习惯进行进化拆解...");
+            const res = await callAI(`拆解任务 "${m.title}"。返回JSON数组: [{"desc":"步骤"}]`);
+            try {
+                m.steps = JSON.parse(res.match(/\[.*\]/s)[0]).map(s => ({...s, completed: false}));
+                render();
+            } catch(e) {}
         }
 
         async function callAI(p) {
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是贾维斯，高效督导管家。"},{role:"user",content:p}] })
+                body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是人工智能管家贾维斯。"},{role:"user",content:p}] })
             });
             const d = await res.json(); return d.choices[0].message.content;
         }
@@ -265,16 +303,14 @@
             localStorage.setItem('j_v25_coins', state.coins); 
             localStorage.setItem('j_v25_missions', JSON.stringify(state.missions)); 
             localStorage.setItem('j_v25_memories', JSON.stringify(state.memories)); 
+            localStorage.setItem('j_v25_learning', JSON.stringify(state.learningMemories)); 
+            localStorage.setItem('j_v25_shop', JSON.stringify(state.shop)); 
         }
-
-        async function breakdownMission(id) {
-            const m = state.missions.find(x => x.id === id);
-            printTerminal("正在拆解步骤...");
-            const res = await callAI(`拆解任务 "${m.title}"。JSON: [{"desc":"步骤"}]`);
-            try {
-                m.steps = JSON.parse(res.match(/\[.*\]/s)[0]).map(s => ({...s, completed: false}));
-                render();
-            } catch(e) {}
+        async function sendChat() { 
+            const i = document.getElementById('chatInput'); if(!i.value) return;
+            state.memories.push({text: i.value, time: new Date().toISOString()});
+            printTerminal(`主人: ${i.value}`); 
+            const r = await callAI(i.value); printTerminal(`JARVIS: ${r}`); i.value = '';
         }
 
         init();
