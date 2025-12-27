@@ -3,89 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jarvis - 贾维斯核心 V19.0</title>
+    <title>Jarvis - Neon Rose V20.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #020617; --card: #0f172a; --p: #38bdf8; --blue: #818cf8; --g: #fbbf24; --text: #f1f5f9; --warn: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 400px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
+        :root { --bg: #000000; --card: #0d0d0f; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #ffffff; }
         
-        @keyframes alert-flash { 0% { background: var(--bg); } 50% { background: #450a0a; box-shadow: inset 0 0 150px var(--warn); } 100% { background: var(--bg); } }
-        .emergency-mode { animation: alert-flash 0.8s infinite; }
+        /* 全浏览器闪红警报层 */
+        @keyframes global-alert { 0%, 100% { opacity: 0; } 50% { opacity: 0.6; } }
+        #emergency-overlay { position: fixed; inset: 0; background: red; z-index: 9999; pointer-events: none; opacity: 0; display: none; }
+        .alert-active #emergency-overlay { display: block; animation: global-alert 0.4s infinite; }
 
-        .panel { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #1e293b; display: flex; flex-direction: column; position: relative; backdrop-filter: blur(10px); }
-        .panel-header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
-        .panel-header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
+        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 380px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
+        
+        .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #1a1a1c; display: flex; flex-direction: column; position: relative; }
+        .header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 15px; border-bottom: 1px solid #1a1a1c; padding-bottom: 8px; }
+        .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
 
-        /* 时间轴：贾维斯记忆流 */
-        .timeline { flex: 1; overflow-y: auto; padding-left: 20px; border-left: 1px solid #334155; }
-        .event { position: relative; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--blue); animation: fadeIn 0.5s ease; }
-        .event::after { content: ""; position: absolute; left: -26px; top: 15px; width: 10px; height: 10px; background: var(--blue); border-radius: 50%; border: 2px solid var(--bg); }
-        .event-time { font-size: 10px; opacity: 0.5; font-family: monospace; }
+        /* 时间轴 */
+        #timeline { flex: 1; overflow-y: auto; border-left: 1px solid #1a1a1c; margin-left: 10px; padding-left: 20px; }
+        .time-node { position: relative; margin-bottom: 20px; padding: 12px; background: #08080a; border: 1px solid #1a1a1c; border-radius: 12px; }
+        .time-node::before { content: ""; position: absolute; left: -26px; top: 15px; width: 10px; height: 10px; background: var(--p); border-radius: 50%; box-shadow: 0 0 10px var(--p); }
+        .node-time { font-size: 10px; color: var(--p); font-family: monospace; }
 
-        /* 任务单 */
-        .todo { background: rgba(56, 189, 248, 0.05); padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #1e293b; transition: 0.3s; cursor: pointer; }
-        .todo:hover { border-color: var(--p); background: rgba(56, 189, 248, 0.1); }
-        .todo.done { border-color: #0f172a; background: transparent; opacity: 0.4; }
+        /* 玫粉任务卡 */
+        .mission { background: rgba(255, 0, 127, 0.03); border: 1px solid #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
+        .mission:hover { border-color: var(--p); box-shadow: 0 0 15px rgba(255, 0, 127, 0.1); }
+        .mission.done { opacity: 0.3; border-color: #111; }
 
-        /* 输入区 */
-        .glass-input { background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 10px; display: flex; gap: 8px; margin-top: 10px; }
+        /* 欲望商店 */
+        .shop-item { display: flex; align-items: center; justify-content: space-between; background: #08080a; padding: 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #1a1a1c; }
+        
+        /* 输入控件 */
+        .input-bar { background: #000; border: 1px solid #1a1a1c; border-radius: 12px; padding: 8px 12px; display: flex; gap: 8px; margin-top: 10px; }
         input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; }
+        button.p-btn { background: var(--p); color: #000; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        /* 贾维斯命令行 */
-        .jarvis-term { background: #000; border-radius: 15px; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; color: #38bdf8; flex: 1; overflow-y: auto; border: 1px solid #1e293b; line-height: 1.6; }
-        .jarvis-term b { color: var(--g); }
+        /* 贾维斯终端 */
+        .terminal { flex: 1; background: #000; border: 1px solid #1a1a1c; border-radius: 15px; padding: 15px; font-family: monospace; font-size: 12px; color: var(--blue); line-height: 1.6; overflow-y: auto; }
         
-        button.primary { background: var(--p); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button.primary:hover { box-shadow: 0 0 20px var(--p); transform: translateY(-2px); }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: 0; } }
-        @media (max-width: 1024px) { body { grid-template-columns: 1fr; height: auto; overflow: auto; } .panel { height: 500px; } }
+        @media (max-width: 1024px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { height: 600px; } }
     </style>
 </head>
-<body id="mainBody">
+<body id="main">
+    <div id="emergency-overlay"></div>
 
     <div class="panel">
-        <div class="panel-header">System Profile <span>● Online</span></div>
-        <div style="height:200px;"><canvas id="radar"></canvas></div>
-        <div style="margin-top:20px; border-top:1px solid #1e293b; padding-top:15px;">
-            <div style="color:#64748b; font-size:10px;">CREDITS / 财富</div>
+        <div class="header">STATUS // <span>AGENT RANK</span></div>
+        <canvas id="radar" style="max-height: 180px;"></canvas>
+        <div style="margin-top:15px; border-bottom: 1px solid #1a1a1c; padding-bottom:10px;">
+            <div style="color:#555; font-size:10px;">CREDITS</div>
             <div style="font-size:32px; font-weight:bold; color:var(--g);">🪙 <span id="coins">1000</span></div>
         </div>
-        <div style="margin-top:auto;">
-            <div class="panel-header">Reward / 兑换</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <button onclick="spend(500, '休息')" style="background:#1e293b; border:none; color:white; padding:10px; border-radius:8px; font-size:11px;">☕ 休息 500🪙</button>
-                <button onclick="spend(2000, '买衣服')" style="background:#1e293b; border:none; color:white; padding:10px; border-radius:8px; font-size:11px;">👕 购物 2000🪙</button>
-            </div>
+        
+        <div class="header" style="margin-top:20px;">DESIRE SHOP // <span>兑换</span></div>
+        <div id="shopList" style="flex:1; overflow-y:auto;"></div>
+        <div class="input-bar" style="font-size:12px;">
+            <input type="text" id="shopIcon" placeholder="🎨 图标" style="width:30px; flex:none;">
+            <input type="text" id="shopName" placeholder="想兑换的事...">
+            <input type="number" id="shopPrice" placeholder="金币" style="width:50px; flex:none;">
+            <button onclick="addShopItem()" style="background:none; color:var(--p); border:none; cursor:pointer;">+</button>
         </div>
     </div>
 
     <div class="panel">
-        <div class="panel-header">Jarvis Memory <span>Daily Timeline</span></div>
-        <div class="timeline" id="memoryFlow"></div>
-        <div class="glass-input">
-            <input type="text" id="missionInput" placeholder="输入任务...">
-            <input type="time" id="missionTime" style="width:100px;">
-            <button onclick="addMission()" style="background:var(--p); border:none; padding:5px 12px; border-radius:8px; cursor:pointer;">+</button>
+        <div class="header">TIMELINE // <span>24H LOGGING</span></div>
+        <div id="timeline"></div>
+        <div class="input-bar">
+            <input type="text" id="mTitle" placeholder="发布新任务...">
+            <input type="time" id="mTime" style="width:100px;">
+            <button class="p-btn" onclick="addMission()">DEPLOY</button>
         </div>
     </div>
 
     <div class="panel">
-        <div class="panel-header">Jarvis Core <span>Intelligence</span></div>
-        <div class="jarvis-term" id="jarvisTerm">
-            > 正在分析您的行为习惯...<br>
-            > 正在生成您的时间画像...<br>
-            > 就绪。
+        <div class="header">JARVIS CORE // <span>INTELLIGENCE</span></div>
+        <div class="terminal" id="jarvisMsg">> 正在等待深度记忆同步...</div>
+        <div class="input-bar">
+            <input type="text" id="chatInput" placeholder="输入心情、工作吐槽、晚餐记录..." onkeypress="if(event.key==='Enter') sendChat()">
         </div>
-        <div class="glass-input">
-            <input type="text" id="chatInput" placeholder="碎碎念、工作情况、想对贾维斯说的话..." onkeypress="if(event.key==='Enter') sendThought()">
-        </div>
-        <button class="primary" onclick="askJarvis()" style="margin-top:10px;">贾维斯，分析我并安排计划</button>
+        <button class="p-btn" style="margin-top:10px; background:transparent; border:1px solid var(--p); color:var(--p);" onclick="askJarvis()">贾维斯，分析记忆并拆解任务</button>
     </div>
 
-<audio id="alarmSnd" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" loop></audio>
+<audio id="alarm" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" loop></audio>
 
 <script>
     const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
@@ -93,100 +94,107 @@
     const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let missions = [];
-    let coinCount = 1000;
+    let missions = [], coinCount = 1000, shopItems = [];
 
     async function init() {
         const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
         if (data) {
             missions = data.filter(d => d.category === 'todo');
+            const shopData = data.find(d => d.category === 'shop_config');
+            if(shopData) shopItems = JSON.parse(shopData.content);
             coinCount = 1000 + data.reduce((acc, log) => acc + (log.coins || 0), 0);
-            renderTimeline(data);
-            updateUI();
+            renderAll();
         }
     }
 
-    function renderTimeline(data) {
-        const area = document.getElementById('memoryFlow');
-        area.innerHTML = '';
-        data.slice(0, 20).forEach(item => {
-            const time = new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    function renderAll() {
+        // 时间轴渲染
+        const tl = document.getElementById('timeline');
+        tl.innerHTML = '';
+        missions.slice(0, 15).forEach(m => {
             const div = document.createElement('div');
-            div.className = item.category === 'todo' ? 'todo' : 'event';
-            if(item.is_done) div.classList.add('done');
-            div.innerHTML = `<span class="event-time">${time}</span><div style="margin-top:4px;">${item.content}</div>`;
-            if(item.category === 'todo' && !item.is_done) {
-                div.onclick = () => completeTask(item.id);
-            }
-            area.appendChild(div);
+            div.className = `mission ${m.is_done ? 'done' : ''}`;
+            div.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>${m.content}</span><span class="node-time">${m.target_time || ''}</span></div>`;
+            if(!m.is_done) div.onclick = () => complete(m.id);
+            tl.appendChild(div);
         });
+
+        // 商店渲染
+        const sl = document.getElementById('shopList');
+        sl.innerHTML = shopItems.map((item, idx) => `
+            <div class="shop-item">
+                <span>${item.icon} ${item.name}</span>
+                <button onclick="spend(${item.price}, '${item.name}')" style="background:#111; color:var(--g); border:1px solid #222; border-radius:5px; cursor:pointer;">${item.price}🪙</button>
+            </div>
+        `).join('');
+        document.getElementById('coins').innerText = coinCount;
     }
 
-    // 智能闪红
+    // 变态全屏报警逻辑
     setInterval(() => {
         const now = new Date();
-        const hasFail = missions.some(m => !m.is_done && m.target_time && now > new Date().setHours(...m.target_time.split(':')) + 60000);
-        document.getElementById('mainBody').classList.toggle('emergency-mode', hasFail);
-        const snd = document.getElementById('alarmSnd');
-        hasFail ? snd.play() : snd.pause();
+        const overdue = missions.some(m => !m.is_done && m.target_time && now > new Date().setHours(...m.target_time.split(':')) + 60000);
+        document.body.classList.toggle('alert-active', overdue);
+        const snd = document.getElementById('alarm');
+        overdue ? snd.play() : snd.pause();
     }, 5000);
 
-    // 贾维斯核心：递归调教
-    async function askJarvis() {
-        const term = document.getElementById('jarvisTerm');
-        term.innerHTML += `<br>> 接入贾维斯核心。分析历史记忆碎片...`;
-        
-        const { data } = await _supabase.from('life_logs').select('content, is_done, created_at').limit(50);
-        const memory = data.map(d => `${new Date(d.created_at).getHours()}点:${d.content}(${d.is_done?'完成':'记录'})`).join(' | ');
-
-        try {
-            const res = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-                body: JSON.stringify({
-                    model: "deepseek-chat",
-                    messages: [
-                        {role: "system", content: "你现在是贾维斯(Jarvis)，用户的私人AI伴生系统。你需要通过用户的历史记录（包含时间、晚餐、心情、任务完成情况）学习他的生活习惯。你的任务是：1. 分析他每天什么时候最勤奋，什么时候容易偷懒。2. 像贾维斯一样优雅但直接地拆解他的计划。3. 语气要像贾维斯，称呼他为'先生'。4. 如果他表现好，给予奖励建议；表现差，进行深刻的性格剖析。"},
-                        {role: "user", content: `先生，这是您的记忆库数据：${memory}。请根据我的习惯智能安排接下来的行动。`}
-                    ]
-                })
-            });
-            const json = await res.json();
-            term.innerHTML += `<br><b>[JARVIS]</b><br>${json.choices[0].message.content.replace(/\n/g, '<br>')}<br>`;
-            term.scrollTop = term.scrollHeight;
-        } catch (e) { term.innerHTML += `<br>> 通讯模块故障。`; }
-    }
-
-    async function completeTask(id) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors:['#38bdf8', '#ffffff'] });
-        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);
+    async function complete(id) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF007F', '#FFFFFF'] });
+        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);等待_supabase.from   从('life_logs'   “life_logs”).update（{is_done: true, coins   硬币: 100}）。eq (id, id);
         init();
     }
 
-    async function addMission() {
-        const c = document.getElementById('missionInput').value;
-        const t = document.getElementById('missionTime').value;
+    async function addMission() {addMission()}
+        const c = document.getElementById('mTitle').value, t = document.getElementById('mTime').value;
         if(c) await _supabase.from('life_logs').insert([{ content: c, target_time: t, category: 'todo', is_done: false, coins: 0 }]);
         init();
     }
 
-    async function sendThought() {
-        const i = document.getElementById('chatInput');
-        if(i.value) await _supabase.from('life_logs').insert([{ content: i.value, category: 'thought', coins: 5 }]);
-        i.value = ''; init();
+    async function addShopItem() {
+        const icon = document.getElementById('shopIcon').value || '🎁';
+        const name = document.getElementById('shopName').value;
+        const price = document.getElementById('shopPrice').value;
+        if(name && price) {
+            shopItems.push({ icon, name, price: parseInt(price) });
+            await _supabase.from('life_logs').insert([{ content: JSON.stringify(shopItems), category: 'shop_config' }]);
+            init();
+        }
     }
 
-    async function spend(amt, item) {
+    async function askJarvis() {
+        const term = document.getElementById('jarvisMsg');
+        term.innerHTML += `<br>> 正在调取全量记忆数据...`;
+        const { data } = await _supabase.from('life_logs').select('content, is_done, created_at').limit(30);
+        const mem = data.map(d => `${d.content}(${d.is_done?'完':'记'})`).join('|');
+        const res = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [{role: "system", content: "你是贾维斯。根据用户记忆分析他的习惯。要求：1. 称呼用户为先生。2. 玫粉色赛博风格语气。3. 给出今日任务的智能细碎拆解。4. 检查用户是否在浪费时间。"}, {role: "user", content: `记忆流：${mem}`}]
+            })
+        });
+        const json = await res.json();
+        term.innerHTML += `<br><span style="color:var(--p)">[JARVIS]</span><br>${json.choices[0].message.content.replace(/\n/g, '<br>')}`;
+    }
+
+    async function spend(amt, note) {
         if(coinCount >= amt) {
-            await _supabase.from('life_logs').insert([{ content: `[Reward] ${item}`, coins: -amt, category: 'spend' }]);
+            await _supabase.from('life_logs').insert([{ content: `[兑换] ${note}`, coins: -amt, category: 'spend' }]);
             init();
         } else alert("金币不足，先生。");
     }
 
-    function updateUI() { document.getElementById('coins').innerText = coinCount; }
+    async function sendChat() {
+        const i = document.getElementById('chatInput');
+        await _supabase.from('life_logs').insert([{ content: i.value, category: 'thought', coins: 5 }]);
+        i.value = ''; init();
+    }
+
     init();
-    const ctx = document.getElementById('radar').getContext('2d');
-    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [60, 75, 50, 45, 85, 55], backgroundColor: 'rgba(56, 189, 248, 0.2)', borderColor: '#38bdf8', borderWidth: 2 }] }, options: { scales: { r: { grid: { color: '#1e293b' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
-</script>
-</body>
+    const ctx = document.getElementById('radar').getContext('2d');const   常量 ctx = document   文档.getElementById('radar'   “雷达”).getContext('2d'   “二维”)；
+    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(255, 0, 127, 0.2)', borderColor: '#FF007F', borderWidth: 2, pointRadius: 0 }] }, options: { scales: { r: { grid: { color: '#1a1a1c' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
+</script>   > < /脚本
+</body>   身体< / >
 </html>
