@@ -2,61 +2,189 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Great Me - AI Agent V15.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Great Me - 特工指挥部 V17.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #050505; --card: #121214; --p: #ff4d94; --blue: #00d2ff; --text: #e0e0e0; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: grid; grid-template-columns: 350px 1fr 350px; height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }
-        @media (max-width: 1000px) { body { grid-template-columns: 1fr; height: auto; overflow-y: auto; } }
-        .panel { background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .panel::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--p), transparent); }
-        #dumpArea { flex: 1; overflow-y: auto; margin: 15px 0; }
-        .bubble { padding: 15px; border-radius: 15px; margin-bottom: 12px; background: #1a1a1c; border-left: 4px solid #333; font-size: 14px; line-height: 1.6; }
-        .pos { border-left-color: var(--blue); background: rgba(0, 210, 255, 0.05); }
-        .input-bar { background: #1a1a1c; border-radius: 12px; padding: 5px 15px; display: flex; border: 1px solid #333; }
-        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; color: white; font-size: 15px; }
-        .ai-text { font-size: 14px; color: #bbb; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 16px; border: 1px solid #333; line-height: 1.7; flex: 1; }
-        button { background: transparent; border: 1px solid var(--p); color: var(--p); padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        :root { --bg: #050505; --card: #111113; --p: #ff4d94; --blue: #00d2ff; --g: #ffb800; --text: #e0e0e0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 350px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
+        
+        /* 响应式适配 */
+        @media (max-width: 1024px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { min-height: 500px; height: auto; } }
+
+        .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #222; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px; }
+        h3::before { content: ""; width: 6px; height: 6px; background: var(--p); border-radius: 50%; }
+
+        /* 任务清单区 */
+        .todo-list { flex: 1; overflow-y: auto; }
+        .todo-item { background: #1a1a1e; padding: 15px; border-radius: 16px; margin-bottom: 10px; border: 1px solid #28282d; display: flex; align-items: center; transition: 0.3s; }
+        .todo-item.done { opacity: 0.5; border-color: #333; }
+        .todo-info { flex: 1; }
+        .todo-time { font-size: 11px; color: var(--blue); margin-top: 4px; }
+        .check-btn { width: 24px; height: 24px; border: 2px solid var(--p); border-radius: 50%; cursor: pointer; margin-right: 15px; position: relative; }
+        .check-btn.active::after { content: "✔"; position: absolute; left: 4px; top: -2px; color: var(--p); }
+
+        /* 输入与金币 */
+        .input-group { background: #1a1a1e; border-radius: 16px; padding: 10px; margin-top: 10px; border: 1px solid #333; }
+        input, select { background: transparent; border: none; color: white; outline: none; width: 100%; padding: 8px; font-size: 14px; }
+        .coin-display { font-size: 24px; font-weight: 900; color: var(--g); text-shadow: 0 0 10px rgba(255,184,0,0.3); }
+
+        /* AI 终端 */
+        .terminal { background: #08080a; border-radius: 16px; padding: 15px; font-family: monospace; font-size: 12px; line-height: 1.6; color: #00ffaa; flex: 1; overflow-y: auto; border: 1px solid #222; }
+        
+        /* 商店区 */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .shop-item { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid #333; font-size: 12px; cursor: pointer; text-align: center; }
+        .shop-item:hover { background: rgba(255,255,255,0.08); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <div class="panel">
-        <h3>📊 STATUS / 属性看板</h3>
-        <div style="flex:1; display:flex; align-items:center;"><canvas id="radar"></canvas></div>
-        <div style="font-size:24px; font-weight:bold; color:#ffb800; margin-top:10px;">AGENT LV.1</div>
-    </div>
-
-    <div class="panel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3>🧠 BRAIN DUMP / 意识流</h3>
-            <span style="font-size:20px; color:#ffb800;">🪙 <span id="coins">1000</span></span>
+        <h3>AGENT PROFILE / 特工档案</h3>
+        <canvas id="radar" style="max-height: 200px;"></canvas>
+        <div style="margin: 20px 0; display:flex; justify-content:space-between; align-items:end;">
+            <div><div style="color:#666; font-size:10px;">CREDITS / 金币</div><div class="coin-display">🪙 <span id="coins">1000</span></div></div>
+            <div style="text-align:right;"><div style="color:#666; font-size:10px;">RANK</div><div style="font-weight:bold; color:var(--p)">LV.01 初级特工</div></div>
         </div>
-        <div id="dumpArea"></div>
-        <div class="input-bar"><input type="text" id="masterInput" placeholder="输入灵感，AI 将结合记忆分析..."></div>
+        
+        <h3>UPGRADE SHOP / 补给商店</h3>
+        <div class="shop-grid">
+            <div class="shop-item" onclick="buy(200, '30分钟游戏时间')">🎮 游戏 30min<br><small>200🪙</small></div>
+            <div class="shop-item" onclick="buy(500, '购买一件新衣服')">👕 新衣服奖励<br><small>5000🪙</small></div>
+            <div class="shop-item" onclick="buy(100, '奖励一杯奶茶')">🧋 奶茶奖励<br><small>1000🪙</small></div>
+            <div class="shop-item" onclick="buy(0, '自定义奖励')">🎁 自定义<br><small>协商</small></div>
+        </div>
     </div>
 
     <div class="panel">
-        <h3>✨ AI STRATEGIC / 战略建议</h3>
-        <div class="ai-text" id="aiStatus">正在监听记忆流... 请在中间框输入内容触发 AI 分析。</div>
-        <button onclick="location.reload()">SYNC / 同步记忆</button>
+        <h3>MISSION CONTROL / 任务主线</h3>
+        <div class="todo-list" id="todoArea">
+            </div>
+        
+        <div class="input-group">
+            <input type="text" id="todoInput" placeholder="输入新任务 (例如: 录制剪辑视频)">
+            <div style="display:flex; gap:10px; margin-top:5px; border-top:1px solid #333; padding-top:5px;">
+                <input type="time" id="todoTime" style="width:120px; color:var(--blue)">
+                <button onclick="addMission()" style="background:var(--p); border:none; color:white; border-radius:8px; padding:0 15px; cursor:pointer; font-weight:bold;">发布任务</button>
+            </div>
+        </div>
+
+        <h3 style="margin-top:20px;">BRAIN DUMP / 意识流 (碎碎念/晚餐)</h3>
+        <div class="input-group">
+            <input type="text" id="chatInput" placeholder="输入此刻心情、晚餐、或是任何想对AI说的话..." onkeypress="if(event.key==='Enter') sendChat()">
+        </div>
     </div>
+
+    <div class="panel">
+        <h3>STRATEGIC HQ / AI 战略指挥部</h3>
+        <div class="terminal" id="aiTerminal">
+            > 系统已就绪...<br>
+            > 正在分析您的近期状态...<br>
+            <span id="aiTyping"></span>
+        </div>
+        <button onclick="askAIForPlan()" style="margin-top:15px; background:transparent; border:1px solid var(--blue); color:var(--blue); padding:12px; border-radius:12px; font-weight:bold; cursor:pointer;">请求 AI 智能拆解今日任务</button>
+    </div>
+
+<audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
 <script>
     const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
     const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
-
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function thinkWithAI(newInput) {
-        const statusEl = document.getElementById('aiStatus');
-        statusEl.innerHTML = "<span style='color:var(--blue)'>⚡ 正在调取云端记忆思考中...</span>";
-        const { data } = await _supabase.from('life_logs').select('content').order('created_at', { ascending: false }).limit(10);
-        const history = data ? data.map(i => i.content).reverse().join(' -> ') : "";
+    let missions = [];
+    let coinCount = 1000;
 
+    // 1. 初始化与同步
+    async function init() {
+        // 请求通知权限
+        if (Notification.permission !== 'granted') Notification.requestPermission();
+
+        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
+        if (data) {
+            missions = data.filter(d => d.category === 'todo');
+            coinCount = 1000 + data.reduce((acc, log) => acc + (log.coins || 0), 0);
+            renderMissions();
+            updateUI();
+        }
+    }
+
+    // 2. 渲染任务并设置定时提醒
+    function renderMissions() {
+        const area = document.getElementById('todoArea');
+        area.innerHTML = '';
+        missions.forEach((m, idx) => {
+            const div = document.createElement('div');
+            div.className = `todo-item ${m.is_done ? 'done' : ''}`;
+            div.innerHTML = `
+                <div class="check-btn ${m.is_done ? 'active' : ''}" onclick="completeMission('${m.id}', ${m.coins || 50})"></div>
+                <div class="todo-info">
+                    <div style="font-weight:bold;">${m.content}</div>
+                    <div class="todo-time">🕒 目标时间: ${m.target_time || '未设置'}</div>
+                </div>
+            `;
+            area.appendChild(div);
+
+            // 定时检测提醒
+            if (m.target_time && !m.is_done) {
+                checkAlarm(m);
+            }
+        });
+    }
+
+    // 3. 闹钟逻辑
+    function checkAlarm(mission) {
+        const now = new Date();
+        const [h, m] = mission.target_time.split(':');
+        const target = new Date(); target.setHours(h, m, 0);
+
+        if (now >= target && now < target.getTime() + 60000) {
+            if (!mission.notified) {
+                document.getElementById('ding').play();
+                new Notification("特工任务提醒", { body: `时间到！请汇报任务：${mission.content}` });
+                mission.notified = true; 
+            }
+        }
+    }
+
+    // 4. 金币特效与完成
+    async function completeMission(id, reward) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#ffb800', '#ffffff'] });
+        document.getElementById('ding').play();
+        await _supabase.from('life_logs').update({ is_done: true, coins: reward }).eq('id', id);
+        init();
+    }
+
+    // 5. AI 智能：根据碎碎念/晚餐智能计划
+    async function sendChat() {
+        const input = document.getElementById('chatInput');
+        const val = input.value;
+        if (!val) return;
+        
+        addLog(val, 'chat');
+        input.value = '';
+        
+        talkToAI(`这是我刚才的心情/生活记录: "${val}"。请以此更新我的特工状态。如果是关于晚餐，评价我的自律。如果是碎碎念，请以导师身份回应。`);
+    }
+
+    async function askAIForPlan() {
+        const currentMissions = missions.map(m => m.content).join(',');
+        talkToAI(`我现在的任务有：${currentMissions}。请帮我智能拆解这些任务，按照我的性格（可能存在的拖延）给出冷酷的执行步骤。并检查我这周是否懈怠，如果我表现不好，请狠狠骂醒我。`);
+    }
+
+    async function talkToAI(prompt) {
+        const term = document.getElementById('aiTerminal');
+        term.innerHTML += `<br>> 正在接入 AI 总部...`;
+        
         try {
             const res = await fetch('https://api.deepseek.com/chat/completions', {
                 method: 'POST',
@@ -64,46 +192,54 @@
                 body: JSON.stringify({
                     model: "deepseek-chat",
                     messages: [
-                        {role: "system", content: "你是一个毒舌且高效的行动导师。根据用户的记忆流，指出他的执行漏洞并给出一个具体的赚钱建议。"},
-                        {role: "user", content: `历史记忆：${history} | 最新输入：${newInput}`}
+                        {role: "system", content: "你是一个既像严厉导师又像贴心管家的AI。你需要根据用户的碎碎念、晚餐情况和任务完成率，进行智能分析。用户懈怠时要毒舌骂醒，用户努力时要给予金币奖励承诺。任务拆解要极其细致。"},
+                        {role: "user", content: prompt}
                     ]
                 })
             });
-            const result = await res.json();
-            statusEl.innerText = result.choices[0].message.content;
-        } catch (e) { statusEl.innerText = "🚨 连接失败，请检查 API 额度或网络。"; }
+            const json = await res.json();
+            const reply = json.choices[0].message.content;
+            term.innerHTML += `<br><span style="color:var(--p)">[AI 报告]</span><br>${reply.replace(/\n/g, '<br>')}<br>`;
+            term.scrollTop = term.scrollHeight;
+        } catch (e) { term.innerHTML += `<br>> 通讯失败。`; }
     }
 
-    async function init() {
-        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
-        if (data) {
-            const area = document.getElementById('dumpArea');
-            area.innerHTML = ''; let coins = 1000;
-            data.forEach(log => {
-                const div = document.createElement('div');
-                div.className = `bubble ${log.category || 'note'}`;
-                div.innerText = log.content;
-                area.appendChild(div);
-                coins += (log.coins || 0);
-            });
-            document.getElementById('coins').innerText = coins;
+    // 通用函数
+    async function addMission() {
+        const content = document.getElementById('todoInput').value;
+        const time = document.getElementById('todoTime').value;
+        if (!content) return;
+        await _supabase.from('life_logs').insert([{ content, category: 'todo', target_time: time, coins: 0, is_done: false }]);
+        document.getElementById('todoInput').value = '';
+        init();
+    }
+
+    async function addLog(content, cat) {
+        await _supabase.from('life_logs').insert([{ content, category: cat, coins: 5 }]);
+        init();
+    }
+
+    function buy(cost, item) {
+        if (coinCount >= cost) {
+            if (confirm(`确定花费 ${cost} 🪙 兑换 [${item}] 吗？`)) {
+                addLog(`兑换奖励: ${item}`, 'shop');
+                _supabase.from('life_logs').insert([{ content: `支出金币: ${item}`, coins: -cost, category: 'spend' }]).then(()=>init());
+            }
+        } else {
+            alert("金币不足，特工，去执行任务！");
         }
     }
 
-    document.getElementById('masterInput').addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-            const val = e.target.value;
-            let type = /(做|写|发|赚|拍|学)/.test(val) ? 'pos' : 'note';
-            await _supabase.from('life_logs').insert([{ content: val, category: type, coins: type === 'pos' ? 50 : 10 }]);
-            e.target.value = '';
-            await init();
-            thinkWithAI(val);
-        }
-    });
+    function updateUI() {
+        document.getElementById('coins').innerText = coinCount;
+    }
+
+    // 雷达图初始化
+    const ctx = document.getElementById('radar').getContext('2d');
+    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(255, 77, 148, 0.2)', borderColor: '#ff4d94', borderWidth: 2 }] }, options: { scales: { r: { grid: { color: '#222' }, ticks: { display: false }, pointLabels: { color: '#555' } } }, plugins: { legend: { display: false } } } });
 
     init();
-    const ctx = document.getElementById('radar').getContext('2d');
-    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(0, 210, 255, 0.2)', borderColor: '#00d2ff', borderWidth: 2 }] }, options: { scales: { r: { angleLines: { color: '#333' }, grid: { color: '#333' }, pointLabels: { color: '#888' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
+    setInterval(init, 60000); // 每分钟检查一次闹钟
 </script>
 </body>
 </html>
