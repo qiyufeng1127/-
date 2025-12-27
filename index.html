@@ -3,97 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Great Me - 特工指挥部 V17.0</title>
+    <title>Jarvis - 贾维斯核心 V19.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #050505; --card: #111113; --p: #ff4d94; --blue: #00d2ff; --g: #ffb800; --text: #e0e0e0; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 350px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
+        :root { --bg: #020617; --card: #0f172a; --p: #38bdf8; --blue: #818cf8; --g: #fbbf24; --text: #f1f5f9; --warn: #ef4444; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 400px; height: 100vh; gap: 15px; padding: 15px; overflow: hidden; }
         
-        /* 响应式适配 */
-        @media (max-width: 1024px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { min-height: 500px; height: auto; } }
+        @keyframes alert-flash { 0% { background: var(--bg); } 50% { background: #450a0a; box-shadow: inset 0 0 150px var(--warn); } 100% { background: var(--bg); } }
+        .emergency-mode { animation: alert-flash 0.8s infinite; }
 
-        .panel { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid #222; display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #666; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px; }
-        h3::before { content: ""; width: 6px; height: 6px; background: var(--p); border-radius: 50%; }
+        .panel { background: var(--card); border-radius: 20px; padding: 20px; border: 1px solid #1e293b; display: flex; flex-direction: column; position: relative; backdrop-filter: blur(10px); }
+        .panel-header { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .panel-header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
 
-        /* 任务清单区 */
-        .todo-list { flex: 1; overflow-y: auto; }
-        .todo-item { background: #1a1a1e; padding: 15px; border-radius: 16px; margin-bottom: 10px; border: 1px solid #28282d; display: flex; align-items: center; transition: 0.3s; }
-        .todo-item.done { opacity: 0.5; border-color: #333; }
-        .todo-info { flex: 1; }
-        .todo-time { font-size: 11px; color: var(--blue); margin-top: 4px; }
-        .check-btn { width: 24px; height: 24px; border: 2px solid var(--p); border-radius: 50%; cursor: pointer; margin-right: 15px; position: relative; }
-        .check-btn.active::after { content: "✔"; position: absolute; left: 4px; top: -2px; color: var(--p); }
+        /* 时间轴：贾维斯记忆流 */
+        .timeline { flex: 1; overflow-y: auto; padding-left: 20px; border-left: 1px solid #334155; }
+        .event { position: relative; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--blue); animation: fadeIn 0.5s ease; }
+        .event::after { content: ""; position: absolute; left: -26px; top: 15px; width: 10px; height: 10px; background: var(--blue); border-radius: 50%; border: 2px solid var(--bg); }
+        .event-time { font-size: 10px; opacity: 0.5; font-family: monospace; }
 
-        /* 输入与金币 */
-        .input-group { background: #1a1a1e; border-radius: 16px; padding: 10px; margin-top: 10px; border: 1px solid #333; }
-        input, select { background: transparent; border: none; color: white; outline: none; width: 100%; padding: 8px; font-size: 14px; }
-        .coin-display { font-size: 24px; font-weight: 900; color: var(--g); text-shadow: 0 0 10px rgba(255,184,0,0.3); }
+        /* 任务单 */
+        .todo { background: rgba(56, 189, 248, 0.05); padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #1e293b; transition: 0.3s; cursor: pointer; }
+        .todo:hover { border-color: var(--p); background: rgba(56, 189, 248, 0.1); }
+        .todo.done { border-color: #0f172a; background: transparent; opacity: 0.4; }
 
-        /* AI 终端 */
-        .terminal { background: #08080a; border-radius: 16px; padding: 15px; font-family: monospace; font-size: 12px; line-height: 1.6; color: #00ffaa; flex: 1; overflow-y: auto; border: 1px solid #222; }
+        /* 输入区 */
+        .glass-input { background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 10px; display: flex; gap: 8px; margin-top: 10px; }
+        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; }
+
+        /* 贾维斯命令行 */
+        .jarvis-term { background: #000; border-radius: 15px; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; color: #38bdf8; flex: 1; overflow-y: auto; border: 1px solid #1e293b; line-height: 1.6; }
+        .jarvis-term b { color: var(--g); }
         
-        /* 商店区 */
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .shop-item { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid #333; font-size: 12px; cursor: pointer; text-align: center; }
-        .shop-item:hover { background: rgba(255,255,255,0.08); }
+        button.primary { background: var(--p); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button.primary:hover { box-shadow: 0 0 20px var(--p); transform: translateY(-2px); }
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: 0; } }
+        @media (max-width: 1024px) { body { grid-template-columns: 1fr; height: auto; overflow: auto; } .panel { height: 500px; } }
     </style>
 </head>
-<body>
+<body id="mainBody">
 
     <div class="panel">
-        <h3>AGENT PROFILE / 特工档案</h3>
-        <canvas id="radar" style="max-height: 200px;"></canvas>
-        <div style="margin: 20px 0; display:flex; justify-content:space-between; align-items:end;">
-            <div><div style="color:#666; font-size:10px;">CREDITS / 金币</div><div class="coin-display">🪙 <span id="coins">1000</span></div></div>
-            <div style="text-align:right;"><div style="color:#666; font-size:10px;">RANK</div><div style="font-weight:bold; color:var(--p)">LV.01 初级特工</div></div>
+        <div class="panel-header">System Profile <span>● Online</span></div>
+        <div style="height:200px;"><canvas id="radar"></canvas></div>
+        <div style="margin-top:20px; border-top:1px solid #1e293b; padding-top:15px;">
+            <div style="color:#64748b; font-size:10px;">CREDITS / 财富</div>
+            <div style="font-size:32px; font-weight:bold; color:var(--g);">🪙 <span id="coins">1000</span></div>
         </div>
-        
-        <h3>UPGRADE SHOP / 补给商店</h3>
-        <div class="shop-grid">
-            <div class="shop-item" onclick="buy(200, '30分钟游戏时间')">🎮 游戏 30min<br><small>200🪙</small></div>
-            <div class="shop-item" onclick="buy(500, '购买一件新衣服')">👕 新衣服奖励<br><small>5000🪙</small></div>
-            <div class="shop-item" onclick="buy(100, '奖励一杯奶茶')">🧋 奶茶奖励<br><small>1000🪙</small></div>
-            <div class="shop-item" onclick="buy(0, '自定义奖励')">🎁 自定义<br><small>协商</small></div>
-        </div>
-    </div>
-
-    <div class="panel">
-        <h3>MISSION CONTROL / 任务主线</h3>
-        <div class="todo-list" id="todoArea">
-            </div>
-        
-        <div class="input-group">
-            <input type="text" id="todoInput" placeholder="输入新任务 (例如: 录制剪辑视频)">
-            <div style="display:flex; gap:10px; margin-top:5px; border-top:1px solid #333; padding-top:5px;">
-                <input type="time" id="todoTime" style="width:120px; color:var(--blue)">
-                <button onclick="addMission()" style="background:var(--p); border:none; color:white; border-radius:8px; padding:0 15px; cursor:pointer; font-weight:bold;">发布任务</button>
+        <div style="margin-top:auto;">
+            <div class="panel-header">Reward / 兑换</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button onclick="spend(500, '休息')" style="background:#1e293b; border:none; color:white; padding:10px; border-radius:8px; font-size:11px;">☕ 休息 500🪙</button>
+                <button onclick="spend(2000, '买衣服')" style="background:#1e293b; border:none; color:white; padding:10px; border-radius:8px; font-size:11px;">👕 购物 2000🪙</button>
             </div>
         </div>
+    </div>
 
-        <h3 style="margin-top:20px;">BRAIN DUMP / 意识流 (碎碎念/晚餐)</h3>
-        <div class="input-group">
-            <input type="text" id="chatInput" placeholder="输入此刻心情、晚餐、或是任何想对AI说的话..." onkeypress="if(event.key==='Enter') sendChat()">
+    <div class="panel">
+        <div class="panel-header">Jarvis Memory <span>Daily Timeline</span></div>
+        <div class="timeline" id="memoryFlow"></div>
+        <div class="glass-input">
+            <input type="text" id="missionInput" placeholder="输入任务...">
+            <input type="time" id="missionTime" style="width:100px;">
+            <button onclick="addMission()" style="background:var(--p); border:none; padding:5px 12px; border-radius:8px; cursor:pointer;">+</button>
         </div>
     </div>
 
     <div class="panel">
-        <h3>STRATEGIC HQ / AI 战略指挥部</h3>
-        <div class="terminal" id="aiTerminal">
-            > 系统已就绪...<br>
-            > 正在分析您的近期状态...<br>
-            <span id="aiTyping"></span>
+        <div class="panel-header">Jarvis Core <span>Intelligence</span></div>
+        <div class="jarvis-term" id="jarvisTerm">
+            > 正在分析您的行为习惯...<br>
+            > 正在生成您的时间画像...<br>
+            > 就绪。
         </div>
-        <button onclick="askAIForPlan()" style="margin-top:15px; background:transparent; border:1px solid var(--blue); color:var(--blue); padding:12px; border-radius:12px; font-weight:bold; cursor:pointer;">请求 AI 智能拆解今日任务</button>
+        <div class="glass-input">
+            <input type="text" id="chatInput" placeholder="碎碎念、工作情况、想对贾维斯说的话..." onkeypress="if(event.key==='Enter') sendThought()">
+        </div>
+        <button class="primary" onclick="askJarvis()" style="margin-top:10px;">贾维斯，分析我并安排计划</button>
     </div>
 
-<audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+<audio id="alarmSnd" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" loop></audio>
 
 <script>
     const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
@@ -104,87 +96,49 @@
     let missions = [];
     let coinCount = 1000;
 
-    // 1. 初始化与同步
     async function init() {
-        // 请求通知权限
-        if (Notification.permission !== 'granted') Notification.requestPermission();
-
         const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
         if (data) {
             missions = data.filter(d => d.category === 'todo');
             coinCount = 1000 + data.reduce((acc, log) => acc + (log.coins || 0), 0);
-            renderMissions();
+            renderTimeline(data);
             updateUI();
         }
     }
 
-    // 2. 渲染任务并设置定时提醒
-    function renderMissions() {
-        const area = document.getElementById('todoArea');
+    function renderTimeline(data) {
+        const area = document.getElementById('memoryFlow');
         area.innerHTML = '';
-        missions.forEach((m, idx) => {
+        data.slice(0, 20).forEach(item => {
+            const time = new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const div = document.createElement('div');
-            div.className = `todo-item ${m.is_done ? 'done' : ''}`;
-            div.innerHTML = `
-                <div class="check-btn ${m.is_done ? 'active' : ''}" onclick="completeMission('${m.id}', ${m.coins || 50})"></div>
-                <div class="todo-info">
-                    <div style="font-weight:bold;">${m.content}</div>
-                    <div class="todo-time">🕒 目标时间: ${m.target_time || '未设置'}</div>
-                </div>
-            `;
-            area.appendChild(div);
-
-            // 定时检测提醒
-            if (m.target_time && !m.is_done) {
-                checkAlarm(m);
+            div.className = item.category === 'todo' ? 'todo' : 'event';
+            if(item.is_done) div.classList.add('done');
+            div.innerHTML = `<span class="event-time">${time}</span><div style="margin-top:4px;">${item.content}</div>`;
+            if(item.category === 'todo' && !item.is_done) {
+                div.onclick = () => completeTask(item.id);
             }
+            area.appendChild(div);
         });
     }
 
-    // 3. 闹钟逻辑
-    function checkAlarm(mission) {
+    // 智能闪红
+    setInterval(() => {
         const now = new Date();
-        const [h, m] = mission.target_time.split(':');
-        const target = new Date(); target.setHours(h, m, 0);
+        const hasFail = missions.some(m => !m.is_done && m.target_time && now > new Date().setHours(...m.target_time.split(':')) + 60000);
+        document.getElementById('mainBody').classList.toggle('emergency-mode', hasFail);
+        const snd = document.getElementById('alarmSnd');
+        hasFail ? snd.play() : snd.pause();
+    }, 5000);
 
-        if (now >= target && now < target.getTime() + 60000) {
-            if (!mission.notified) {
-                document.getElementById('ding').play();
-                new Notification("特工任务提醒", { body: `时间到！请汇报任务：${mission.content}` });
-                mission.notified = true; 
-            }
-        }
-    }
-
-    // 4. 金币特效与完成
-    async function completeMission(id, reward) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#ffb800', '#ffffff'] });
-        document.getElementById('ding').play();
-        await _supabase.from('life_logs').update({ is_done: true, coins: reward }).eq('id', id);
-        init();
-    }
-
-    // 5. AI 智能：根据碎碎念/晚餐智能计划
-    async function sendChat() {
-        const input = document.getElementById('chatInput');
-        const val = input.value;
-        if (!val) return;
+    // 贾维斯核心：递归调教
+    async function askJarvis() {
+        const term = document.getElementById('jarvisTerm');
+        term.innerHTML += `<br>> 接入贾维斯核心。分析历史记忆碎片...`;
         
-        addLog(val, 'chat');
-        input.value = '';
-        
-        talkToAI(`这是我刚才的心情/生活记录: "${val}"。请以此更新我的特工状态。如果是关于晚餐，评价我的自律。如果是碎碎念，请以导师身份回应。`);
-    }
+        const { data } = await _supabase.from('life_logs').select('content, is_done, created_at').limit(50);
+        const memory = data.map(d => `${new Date(d.created_at).getHours()}点:${d.content}(${d.is_done?'完成':'记录'})`).join(' | ');
 
-    async function askAIForPlan() {
-        const currentMissions = missions.map(m => m.content).join(',');
-        talkToAI(`我现在的任务有：${currentMissions}。请帮我智能拆解这些任务，按照我的性格（可能存在的拖延）给出冷酷的执行步骤。并检查我这周是否懈怠，如果我表现不好，请狠狠骂醒我。`);
-    }
-
-    async function talkToAI(prompt) {
-        const term = document.getElementById('aiTerminal');
-        term.innerHTML += `<br>> 正在接入 AI 总部...`;
-        
         try {
             const res = await fetch('https://api.deepseek.com/chat/completions', {
                 method: 'POST',
@@ -192,54 +146,47 @@
                 body: JSON.stringify({
                     model: "deepseek-chat",
                     messages: [
-                        {role: "system", content: "你是一个既像严厉导师又像贴心管家的AI。你需要根据用户的碎碎念、晚餐情况和任务完成率，进行智能分析。用户懈怠时要毒舌骂醒，用户努力时要给予金币奖励承诺。任务拆解要极其细致。"},
-                        {role: "user", content: prompt}
+                        {role: "system", content: "你现在是贾维斯(Jarvis)，用户的私人AI伴生系统。你需要通过用户的历史记录（包含时间、晚餐、心情、任务完成情况）学习他的生活习惯。你的任务是：1. 分析他每天什么时候最勤奋，什么时候容易偷懒。2. 像贾维斯一样优雅但直接地拆解他的计划。3. 语气要像贾维斯，称呼他为'先生'。4. 如果他表现好，给予奖励建议；表现差，进行深刻的性格剖析。"},
+                        {role: "user", content: `先生，这是您的记忆库数据：${memory}。请根据我的习惯智能安排接下来的行动。`}
                     ]
                 })
             });
             const json = await res.json();
-            const reply = json.choices[0].message.content;
-            term.innerHTML += `<br><span style="color:var(--p)">[AI 报告]</span><br>${reply.replace(/\n/g, '<br>')}<br>`;
+            term.innerHTML += `<br><b>[JARVIS]</b><br>${json.choices[0].message.content.replace(/\n/g, '<br>')}<br>`;
             term.scrollTop = term.scrollHeight;
-        } catch (e) { term.innerHTML += `<br>> 通讯失败。`; }
+        } catch (e) { term.innerHTML += `<br>> 通讯模块故障。`; }
     }
 
-    // 通用函数
+    async function completeTask(id) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors:['#38bdf8', '#ffffff'] });
+        await _supabase.from('life_logs').update({ is_done: true, coins: 100 }).eq('id', id);
+        init();
+    }
+
     async function addMission() {
-        const content = document.getElementById('todoInput').value;
-        const time = document.getElementById('todoTime').value;
-        if (!content) return;
-        await _supabase.from('life_logs').insert([{ content, category: 'todo', target_time: time, coins: 0, is_done: false }]);
-        document.getElementById('todoInput').value = '';
+        const c = document.getElementById('missionInput').value;
+        const t = document.getElementById('missionTime').value;
+        if(c) await _supabase.from('life_logs').insert([{ content: c, target_time: t, category: 'todo', is_done: false, coins: 0 }]);
         init();
     }
 
-    async function addLog(content, cat) {
-        await _supabase.from('life_logs').insert([{ content, category: cat, coins: 5 }]);
-        init();
+    async function sendThought() {
+        const i = document.getElementById('chatInput');
+        if(i.value) await _supabase.from('life_logs').insert([{ content: i.value, category: 'thought', coins: 5 }]);
+        i.value = ''; init();
     }
 
-    function buy(cost, item) {
-        if (coinCount >= cost) {
-            if (confirm(`确定花费 ${cost} 🪙 兑换 [${item}] 吗？`)) {
-                addLog(`兑换奖励: ${item}`, 'shop');
-                _supabase.from('life_logs').insert([{ content: `支出金币: ${item}`, coins: -cost, category: 'spend' }]).then(()=>init());
-            }
-        } else {
-            alert("金币不足，特工，去执行任务！");
-        }
+    async function spend(amt, item) {
+        if(coinCount >= amt) {
+            await _supabase.from('life_logs').insert([{ content: `[Reward] ${item}`, coins: -amt, category: 'spend' }]);
+            init();
+        } else alert("金币不足，先生。");
     }
 
-    function updateUI() {
-        document.getElementById('coins').innerText = coinCount;
-    }
-
-    // 雷达图初始化
-    const ctx = document.getElementById('radar').getContext('2d');
-    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65, 80, 55, 45, 90, 60], backgroundColor: 'rgba(255, 77, 148, 0.2)', borderColor: '#ff4d94', borderWidth: 2 }] }, options: { scales: { r: { grid: { color: '#222' }, ticks: { display: false }, pointLabels: { color: '#555' } } }, plugins: { legend: { display: false } } } });
-
+    function updateUI() { document.getElementById('coins').innerText = coinCount; }
     init();
-    setInterval(init, 60000); // 每分钟检查一次闹钟
+    const ctx = document.getElementById('radar').getContext('2d');
+    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [60, 75, 50, 45, 85, 55], backgroundColor: 'rgba(56, 189, 248, 0.2)', borderColor: '#38bdf8', borderWidth: 2 }] }, options: { scales: { r: { grid: { color: '#1e293b' }, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
 </script>
 </body>
 </html>
