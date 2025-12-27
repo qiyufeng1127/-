@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">   < html lang = "应用" >
+<head>   < >负责人
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Great Me - 伟大之我 V13.1</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>< script src = " https://cdn.jsdelivr.net
+pm/@supabase supabase-js@2 " > < /脚本>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>< script src = " https://cdn.jsdelivr.net
+pm/chart.js " > < /脚本>
+    <style>
+        :root { --bg: #fdfbff; --p: #ff4d94; --g: #ffb800; }
+        body { background: var(--bg); font-family: -apple-system, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr 320px; height: 100vh; gap: 15px; padding: 15px; box-sizing: border-box; }
+        @media (max-width: 768px) { body { grid-template-columns: 1fr; overflow-y: auto; height: auto; } .panel { height: 400px; margin-bottom: 15px; } }
+        .panel { background: white; border-radius: 30px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #eee; }
+        .bubble { padding: 15px; border-radius: 18px; margin-bottom: 10px; border-left: 6px solid #eee; background: #f8f9fa; animation: pop 0.3s ease; }
+        .pos { border-color: #339af0; background: #e7f5ff; }
+        .neg { border-color: #ff6b6b; background: #fff5f5; }
+        .input-bar { background: #f1f3f5; border-radius: 20px; padding: 5px 15px; display: flex; align-items: center; margin-top: auto; border: 2px solid transparent; }
+        .input-bar:focus-within { border-color: var(--p); background: white; }
+        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; font-size: 16px; }
+        @keyframes pop { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: 0; } }
+    </style>
+</head>
+<body>
+    <div class="panel"><h3>特工属性看板</h3><canvas id="radar"></canvas></div>
+    <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:bold;">意识流捕捉 (Brain Dump)</span>
+            <b style="color:var(--g); font-size:20px;">🪙 <span id="coins">1000</span></b>
+        </div>
+        <div id="dumpArea" style="flex:1; overflow-y:auto; margin: 15px 0;"></div>
+        <div class="input-bar"><input type="text" id="masterInput" placeholder="输入想法，回车同步..."></div>
+    </div>
+    <div class="panel"><h3>AI 战略中心</h3><div id="aiStatus" style="font-size:14px; color:#666; line-height:1.6;">正在监听您的赚钱主线...</div></div>
+
+<script>
+    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co'；
+    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';const SUPABASE_KEY = ' sb_publishhable_jven8rbif0xupkl2ovhpqa_rywuijty '；
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);Const _supabase = supabase。createClient (SUPABASE_URL SUPABASE_KEY);
+
+    async function init() {   异步函数init() {
+        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });Const {data} = await _supabase.from('life_logs').select('*').order('created_at'，{升序：false})；
+        if (data) {   If (data) {
+            const area = document.getElementById('dumpArea');const area = document.getElementById('dumpArea')；
+            area.innerHTML = '';
+            let totalCoins = 1000;   TotalCoins = 1000；
+            data.forEach(log => {   数据。forEach(log => {
+                const div = document.createElement('div');const div = document.createElement('div')；
+                div.className = `bubble ${log.category || 'note'}`;div.className = ' bubble ${log.category || 'note'} '；
+                div.innerText = log.content;
+                area.appendChild(div);
+                totalCoins += (log.coins || 0);totalCoins = (log。参考书| | 0);
+            });
+            document.getElementById('coins').innerText = totalCoins;
+        }
+    }
+
+    document.getElementById('masterInput').addEventListener('keypress', async (e) => {. getelementbyid(“masterInput”)。addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && e.target.value.trim()) {if (e.key === 'Enter' && e.target.value。削减()){
+            const val = e.target.value;   const val = e.target.value；
+            let type = 'note';   Let type = 'note'；
+            let reward = 0;   设奖励= 0；
+            if (/(发|写|做|学|完成|小红书|拍|赚钱)/.test(val)) { type = 'pos'; reward = 50; }
+            else if (/(焦虑|拖延|不想|累)/.test(val)) { type = 'neg'; reward = -100; }
+            
+            await _supabase.from('life_logs').insert([{ content: val, category: type, coins: reward }]);Await _supabase.from('life_logs').insert([{content: val, category: type, coins: reward}])；
+            e.target.value = '';
+            init();
+        }
+    });
+
+    init();
+    const ctx = document.getElementById('radar').getContext('2d');const ctx = document.getElementById('radar').getContext('2d')；
+    new Chart(ctx, { type: 'radar', data: { labels: ['执行', '目标', '洞察', '创新', '恢复', '专注'], datasets: [{ data: [65,75,50,40,85,60], backgroundColor: 'rgba(255, 77, 148, 0.2)', borderColor: '#ff4d94', borderWidth: 2 }] }, options: { scales: { r: { ticks: { display: false } } }, plugins: { legend: { display: false } } } });新图表(ctx,{类型:“雷达”,数据:{标签:[“执行”,“目标”、“洞察”,“创新”,“恢复”,“专注”),数据集:[{数据:[65、75、50、40、85、60),写成backgroundColor:“rgba(255、77、148、0.2),borderColor: # ff4d94, borderWidth: 2}]},选项:{尺度:{r:{蜱虫:{显示:假}}},插件:{传奇:{显示:假的  } } } });
+</script>   > < /脚本
+</body>   身体< / >
+</html>
