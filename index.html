@@ -2,197 +2,311 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Jarvis - Fixed Command Deck</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jarvis - Omnipotence Station V3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
             --bg: #131314; --card: #1E1E20; --p: #FF007F; --blue: #00D2FF; --g: #FFD700; --text: #E3E3E3;
+            --color-work: #FF4757; --color-life: #70A1FF; --color-fixed: #2ED573; --color-mood: #ECCC68;
         }
+        
         body { 
-            background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; 
             margin: 0; padding: 20px; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at 2px 2px, #333 1px, transparent 0);
             background-size: 40px 40px;
         }
 
-        #workspace { display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start; height: 100%; }
+        /* 自由桌面容器 */
+        #workspace {
+            display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start; height: 100%;
+        }
 
-        /* 面板基础 */
+        /* 模块基础样式：支持拖拽和缩放 */
         .panel { 
-            background: var(--card); border-radius: 20px; padding: 15px; 
+            background: var(--card); border-radius: 20px; padding: 18px; 
             border: 1px solid #333; display: flex; flex-direction: column; 
             position: relative; resize: both; overflow: hidden;
-            width: 380px; height: 500px; cursor: grab;
+            min-width: 300px; min-height: 250px;
+            cursor: grab; transition: box-shadow 0.2s;
+        }
+        .panel:active { cursor: grabbing; box-shadow: 0 0 30px rgba(255, 0, 127, 0.2); }
+        .panel.dragging { opacity: 0.4; border: 2px dashed var(--p); }
+
+        /* 右下角拉伸手柄美化 */
+        .panel::-webkit-resizer {
+            background-color: var(--p); border-radius: 10px 0 0 0;
         }
 
         .header { 
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px; 
             color: #888; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 8px;
+            display: flex; justify-content: space-between; pointer-events: none;
+        }
+        .header span { color: var(--p); text-shadow: 0 0 10px var(--p); }
+
+        /* 内容区容器 */
+        .content-inner { flex: 1; display: flex; flex-direction: column; overflow: hidden; cursor: default; }
+        .scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+        /* 列表项样式 */
+        .item-row { 
+            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; 
+            margin-bottom: 10px; border-left: 3px solid var(--p);
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 核心修改：内容区与固定底部的分离布局 */
-        .content-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* 确保内部滚动不影响外部 */
-            position: relative;
-        }
-
-        .scroll-area { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding-bottom: 20px; /* 为底部输入框留出空间 */
-        }
-
-        /* --- 醒目的底部固定输入台 --- */
+        /* 底部固定部署台样式 */
         .fixed-command-deck {
-            background: #000;
-            border: 2px solid var(--p);
-            border-radius: 12px;
-            padding: 10px 15px;
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            box-shadow: 0 -5px 20px rgba(255, 0, 127, 0.2); /* 向上扩散的发光感 */
-            position: relative;
-            z-index: 10;
+            background: #000; border: 2px solid var(--p); border-radius: 12px;
+            padding: 8px 12px; display: flex; gap: 10px; margin-top: 10px;
+            box-shadow: 0 -5px 15px rgba(255, 0, 127, 0.1); position: relative;
         }
-
-        /* 装饰用的发光角，匹配你截图中的效果 */
+        /* 截图同款粉色角装饰 */
         .fixed-command-deck::after {
-            content: '';
-            position: absolute;
-            right: -2px;
-            bottom: -2px;
-            width: 15px;
-            height: 15px;
-            background: var(--p);
-            clip-path: polygon(100% 0, 100% 100%, 0 100%);
-            border-radius: 0 0 12px 0;
-            filter: blur(2px);
+            content: ''; position: absolute; right: -2px; bottom: -2px;
+            width: 12px; height: 12px; background: var(--p);
+            clip-path: polygon(100% 0, 100% 100%, 0 100%); border-radius: 0 0 12px 0;
         }
 
-        input { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 14px; font-weight: 500; }
-        input::placeholder { color: #555; }
+        input, select { background: transparent; border: none; color: white; outline: none; flex: 1; font-size: 13px; }
+        .p-btn { background: var(--p); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; padding: 6px 12px; font-size: 11px; }
+        .terminal { flex: 1; background: #0a0a0a; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--blue); overflow-y: auto; }
         
-        .deploy-btn { 
-            background: var(--p); color: #000; border: none; border-radius: 8px; 
-            font-weight: 900; cursor: pointer; padding: 5px 15px; font-size: 12px;
-            transition: 0.2s;
+        /* 时间轴节点 */
+        .timeline-node { position: relative; padding-left: 30px; border-left: 2px solid #333; margin-left: 10px; margin-bottom: 20px; }
+        .timeline-node::before {
+            content: attr(data-icon); position: absolute; left: -16px; top: 0;
+            width: 30px; height: 30px; background: var(--bg); border: 1px solid var(--p);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
         }
-        .deploy-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
-
-        /* 时间轴节点美化（参考白色简约版） */
-        .timeline-item {
-            display: flex; gap: 15px; margin-bottom: 20px; position: relative;
-        }
-        .timeline-left { display: flex; flex-direction: column; align-items: center; width: 50px; }
-        .time-label { font-size: 10px; color: #777; white-space: nowrap; }
-        .timeline-dot { 
-            width: 12px; height: 12px; border: 2px solid var(--p); border-radius: 50%; 
-            background: var(--bg); margin-top: 5px; z-index: 2;
-        }
-        .timeline-line { position: absolute; left: 24px; top: 20px; bottom: -20px; width: 2px; background: #333; }
-        .timeline-content { flex: 1; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; border: 1px solid #2a2a2a; }
-
-        .terminal { flex: 1; background: #0a0a0a; border-radius: 10px; padding: 10px; font-family: monospace; font-size: 11px; color: var(--blue); }
     </style>
 </head>
 <body>
 
     <div id="workspace">
-        <div class="panel" draggable="true" id="timeline" style="width: 450px;">
-            <div class="header">TIMELINE // <span>MONITORING</span></div>
-            
-            <div class="content-container" onmousedown="event.stopPropagation()">
-                <div class="scroll-area" id="timelineList">
-                    </div>
-
-                <div class="fixed-command-deck">
-                    <input type="text" id="mTitle" placeholder="碎碎念或新任务..." onkeypress="if(event.key==='Enter') deployMission()">
-                    <button class="deploy-btn" onclick="deployMission()">DEPLOY</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel" draggable="true" id="shop" style="width: 320px;">
+        <div class="panel" draggable="true" id="mod-assets" style="width: 320px; height: 450px;">
             <div class="header">STATUS // <span>CORE ASSETS</span></div>
-            <div class="content-inner" style="display:flex; flex-direction:column; height:100%;" onmousedown="event.stopPropagation()">
-                <div style="text-align: center; margin: 20px 0;">
-                    <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">1000</span></div>
-                    <div style="font-size:11px; color:#555;">自由额度: 5000 分钟</div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div style="text-align: center; margin: 15px 0;">
+                    <div style="font-size:32px; color:var(--g); font-weight: bold;">🪙 <span id="coinsDisplay">0</span></div>
+                    <div style="font-size:11px; color:#666;">自由额度: <span id="timeDisplay">0</span> MIN</div>
                 </div>
                 <div class="header">SHOP // <span>REWARDS</span></div>
                 <div class="scroll-area" id="shopList"></div>
+                <div class="fixed-command-deck">
+                    <input type="text" id="shopName" placeholder="奖励...">
+                    <input type="number" id="shopCost" placeholder="C" style="width:40px">
+                    <button class="p-btn" onclick="addShopItem()">+</button>
+                </div>
             </div>
         </div>
 
-        <div class="panel" draggable="true" id="brain" style="width: 350px; height: 300px;">
-            <div class="header">JARVIS // <span>BRAIN</span></div>
-            <div class="content-inner" style="display:flex; flex-direction:column; height:100%;" onmousedown="event.stopPropagation()">
-                <div class="terminal" id="terminalBox">> 底部部署台已加固。</div>
+        <div class="panel" draggable="true" id="mod-timeline" style="width: 450px; height: 500px;">
+            <div class="header">TIMELINE // <span>MONITORING</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="scroll-area" id="timelineList"></div>
+                <div class="fixed-command-deck">
+                    <input type="text" id="mTitle" placeholder="碎碎念、心情或新任务..." onkeypress="if(event.key==='Enter') deployMission()">
+                    <button class="p-btn" onclick="deployMission()">DEPLOY</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" draggable="true" id="mod-routine" style="width: 320px; height: 400px;">
+            <div class="header">ROUTINES // <span>DAILY</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="scroll-area" id="routineList"></div>
+                <div class="fixed-command-deck">
+                    <input type="time" id="rTime" value="20:00">
+                    <input type="text" id="rTitle" placeholder="固定周期任务...">
+                    <button class="p-btn" onclick="addRoutine()">ADD</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" draggable="true" id="mod-brain" style="width: 350px; height: 350px;">
+            <div class="header">JARVIS // <span>CORE</span></div>
+            <div class="content-inner" onmousedown="event.stopPropagation()">
+                <div class="terminal" id="terminalBox">> 模块化系统 V3.0 就绪。</div>
+                <div class="fixed-command-deck">
+                    <input type="text" id="chatInput" placeholder="在此汇报或吐槽..." onkeypress="if(event.key==='Enter') sendChat()">
+                    <button class="p-btn" onclick="sendChat()">SEND</button>
+                </div>
+                <button class="p-btn" style="margin-top: 10px; background: var(--g); color: #000;" onclick="aiSuggestion()">贾维斯，建议我现在做什么？</button>
             </div>
         </div>
     </div>
 
     <script>
+        const API_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
+        const API_URL = 'https://api.deepseek.com/chat/completions';
+
         let state = {
-            missions: [
-                { title: "发照相馆小红书", time: "17:36", steps: ["筛选照片", "撰写文案", "检查排版"] }
-            ]
+            coins: parseInt(localStorage.getItem('j_v3_coins')) || 1000,
+            shop: JSON.parse(localStorage.getItem('j_v3_shop')) || [
+                { name: "刷 30 分钟视频", cost: 100 },
+                { name: "吃个零食", cost: 50 }
+            ],
+            routines: JSON.parse(localStorage.getItem('j_v3_routines')) || [],
+            missions: JSON.parse(localStorage.getItem('j_v3_missions')) || [],
+            activeId: null
         };
 
+        function init() {
+            render();
+            setupDragAndDrop();
+            setInterval(tick, 1000);
+            printTerminal("欢迎回来，指挥中心已完成 DIY 模块化升级。");
+        }
+
+        // --- 核心拖拽逻辑 ---
+        function setupDragAndDrop() {
+            const workspace = document.getElementById('workspace');
+            const panels = document.querySelectorAll('.panel');
+
+            panels.forEach(panel => {
+                panel.addEventListener('dragstart', (e) => {
+                    const rect = panel.getBoundingClientRect();
+                    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
+                        e.preventDefault(); return; 
+                    }
+                    panel.classList.add('dragging');
+                });
+                panel.addEventListener('dragend', () => panel.classList.remove('dragging'));
+            });
+
+            workspace.addEventListener('dragover', e => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                const afterElement = getDragAfterElement(workspace, e.clientX);
+                if (afterElement == null) workspace.appendChild(dragging);
+                else workspace.insertBefore(dragging, afterElement);
+            });
+        }
+
+        function getDragAfterElement(container, x) {
+            const draggableElements = [...container.querySelectorAll('.panel:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = x - box.left - box.width / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // --- 业务渲染 ---
         function render() {
-            const list = document.getElementById('timelineList');
-            list.innerHTML = state.missions.map((m, index) => `
-                <div class="timeline-item">
-                    <div class="timeline-line"></div>
-                    <div class="timeline-left">
-                        <span class="time-label">${m.time}</span>
-                        <div class="timeline-dot"></div>
-                    </div>
-                    <div class="timeline-content">
-                        <div style="font-weight:bold; color:var(--g); margin-bottom:8px;">${m.title}</div>
-                        ${m.steps ? m.steps.map(s => `<div style="font-size:12px; color:#aaa; margin-bottom:4px;">○ ${s}</div>`).join('') : ''}
+            document.getElementById('coinsDisplay').innerText = state.coins;
+            document.getElementById('timeDisplay').innerText = state.coins * 5;
+
+            // 渲染商店 [恢复功能]
+            document.getElementById('shopList').innerHTML = state.shop.map((item, idx) => `
+                <div class="item-row">
+                    <span style="font-size:12px;">${item.name}</span>
+                    <button class="p-btn" style="background:var(--g)" onclick="buyItem(${idx})">${item.cost}C</button>
+                </div>
+            `).join('');
+
+            // 渲染时间轴
+            document.getElementById('timelineList').innerHTML = state.missions.map(m => `
+                <div class="timeline-node" data-icon="${m.icon || '📍'}">
+                    <div style="font-size:10px; color:#666;">${m.startTime}</div>
+                    <div style="font-weight:bold; color:${m.active ? 'var(--blue)' : 'inherit'}" onclick="toggleMission(${m.id})">
+                        ${m.title} ${m.active ? `(${formatTime(m.secondsLeft)})` : ''}
                     </div>
                 </div>
             `).join('');
-            
-            // 每次渲染后自动滚动到底部，以便看到最新任务
-            list.scrollTop = list.scrollHeight;
+
+            // 渲染周期
+            document.getElementById('routineList').innerHTML = state.routines.map(r => `
+                <div class="item-row" style="border-left-color:var(--color-fixed)">
+                    <span><b>[${r.time}]</b> ${r.title}</span>
+                    <span style="cursor:pointer" onclick="removeRoutine(${r.id})">×</span>
+                </div>
+            `).join('');
+            save();
         }
 
-        function deployMission() {
-            const input = document.getElementById('mTitle');
-            if(!input.value) return;
+        // --- 功能逻辑 ---
+        async function deployMission() {
+            const input = document.getElementById('mTitle'); if(!input.value) return;
+            printTerminal("贾维斯正在分析任务...");
+            const res = await callAI(`分析任务: "${input.value}"，返回严格JSON: {"mins":数字, "type":"work/life/mood", "icon":"图标"}`);
+            const data = JSON.parse(res.match(/\{.*\}/s)[0]);
             
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-            
-            state.missions.push({
-                title: input.value,
-                time: timeStr,
-                steps: ["等待详细拆解..."]
+            state.missions.unshift({
+                id: Date.now(), title: input.value, startTime: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                secondsLeft: data.mins * 60, icon: data.icon, active: false, reward: Math.ceil(data.mins/5)
             });
-            
-            input.value = '';
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#FF007F', '#00D2FF'] });
+            input.value = ''; render();
+        }
+
+        function addShopItem() {
+            const name = document.getElementById('shopName').value;
+            const cost = parseInt(document.getElementById('shopCost').value);
+            if(name && cost) { state.shop.push({name, cost}); render(); }
+        }
+
+        function buyItem(idx) {
+            const item = state.shop[idx];
+            if(state.coins >= item.cost) {
+                state.coins -= item.cost;
+                confetti({ particleCount: 100 });
+                printTerminal(`成功兑换奖励: ${item.name}`);
+                render();
+            }
+        }
+
+        function toggleMission(id) {
+            state.missions.forEach(m => m.active = (m.id === id ? !m.active : false));
             render();
         }
 
-        // 简单的面板拖拽初始化
-        document.querySelectorAll('.panel').forEach(panel => {
-            panel.ondragstart = (e) => {
-                if (e.target.closest('.fixed-command-deck') || e.target.closest('.scroll-area')) {
-                    e.preventDefault(); return;
-                }
-                panel.classList.add('dragging');
-            };
-            panel.ondragend = () => panel.classList.remove('dragging');
-        });
+        function tick() {
+            const active = state.missions.find(m => m.active);
+            if(active && active.secondsLeft > 0) {
+                active.secondsLeft--;
+                if(active.secondsLeft % 5 === 0) render();
+            } else if(active && active.secondsLeft <= 0) {
+                active.active = false; state.coins += active.reward;
+                confetti({ particleCount: 150 });
+                printTerminal(`任务完成！获得金币: ${active.reward}`);
+                render();
+            }
+        }
 
-        render();
+        // --- 周期任务 ---
+        function addRoutine() {
+            const time = document.getElementById('rTime').value;
+            const title = document.getElementById('rTitle').value;
+            if(title) { state.routines.push({id: Date.now(), time, title}); render(); }
+        }
+        function removeRoutine(id) { state.routines = state.routines.filter(r => r.id !== id); render(); }
+
+        // --- 工具 ---
+        async function callAI(p) {
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({ model: "deepseek-chat", messages: [{role:"system",content:"你是贾维斯"},{role:"user",content:p}] })
+                });
+                const d = await res.json(); return d.choices[0].message.content;
+            } catch(e) { return '{"mins":25, "type":"work", "icon":"⚡"}'; }
+        }
+        function formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
+        function printTerminal(t) { const b = document.getElementById('terminalBox'); b.innerHTML += `<div>> ${t}</div>`; b.scrollTop = b.scrollHeight; }
+        function save() { 
+            localStorage.setItem('j_v3_coins', state.coins); 
+            localStorage.setItem('j_v3_shop', JSON.stringify(state.shop));
+            localStorage.setItem('j_v3_missions', JSON.stringify(state.missions));
+            localStorage.setItem('j_v3_routines', JSON.stringify(state.routines));
+        }
+
+        init();
     </script>
 </body>
 </html>
