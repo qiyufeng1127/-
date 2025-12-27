@@ -1,98 +1,86 @@
-<!DOCTYPE html>   <！DOCTYPE html >
-<html lang="zh-CN">   < html lang = "应用" >
-<head>   < >负责人
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Great Me - AI 特工系统 V14.5</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>< script src = " https://cdn.jsdelivr.net
-pm/@supabase supabase-js@2 " > < /脚本>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>< script src = " https://cdn.jsdelivr.net
-pm/chart.js " > < /脚本>
+    <title>Great Me - AI Agent V15.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #050505; --card: #121214; --p: #ff4d94; --blue: #00d2ff; --g: #ffb800; --text: #e0e0e0; }：root{—bg: #050505；——卡:# 121214;——p: # ff4d94;——蓝色:# 00 d2ff;——g: # ffb800;——文本:# e0e0e0;｝
-        body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', sans-serif; margin: 0; display: grid; grid-template-columns: 350px 1fr 350px; height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }body {background: var（——bg）；活动中一:var(…)文本;字体家族：‘PingFang SC’，无衬线字体；margin: 0;屏幕:全国最好;网格模板-列：350px 1fr 350px；height: 100vh;gap: 20px;padding: 20px;box-sizing: border-box;……
-        @media (max-width: 1100px) { body { grid-template-columns: 1fr; height: auto; overflow-y: auto; } .panel { min-height: 450px; } }
-        .panel { background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }．面板{背景：var（——card）；border - radius: 24 px;填充:25 px;边框：1px实心#222；显示:flex;flex-direction:列;位置:相对;Box-shadow: 10px 30px rgba(0,0,0,0.5)；｝
-        .panel::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--p), transparent); }．Panel::before {content: ""；位置:绝对的;上图:0;左:0;右:0;高度:2 px;背景：线性梯度（90度，透明，var（——p），透明）；｝
-        h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px; }
-        h3::before { content: "●"; color: var(--p); font-size: 10px; }H3::before {content：“●”；颜色:var (- p);字体大小:10 px;｝
-        #dumpArea { flex: 1; overflow-y: auto; margin-bottom: 15px; }
-        .bubble { padding: 15px; border-radius: 16px; margin-bottom: 12px; background: #1a1a1c; border-left: 4px solid #333; font-size: 14px; animation: fadeIn 0.4s ease; }
+        :root { --bg: #050505; --card: #121214; --p: #ff4d94; --blue: #00d2ff; --text: #e0e0e0; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: grid; grid-template-columns: 350px 1fr 350px; height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }
+        @media (max-width: 1000px) { body { grid-template-columns: 1fr; height: auto; overflow-y: auto; } }
+        .panel { background: var(--card); border-radius: 24px; padding: 25px; border: 1px solid #222; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .panel::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--p), transparent); }
+        #dumpArea { flex: 1; overflow-y: auto; margin: 15px 0; }
+        .bubble { padding: 15px; border-radius: 15px; margin-bottom: 12px; background: #1a1a1c; border-left: 4px solid #333; font-size: 14px; line-height: 1.6; }
         .pos { border-left-color: var(--blue); background: rgba(0, 210, 255, 0.05); }
-        .neg { border-left-color: var(--p); background: rgba(255, 77, 148, 0.05); }
         .input-bar { background: #1a1a1c; border-radius: 12px; padding: 5px 15px; display: flex; border: 1px solid #333; }
-        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; font-size: 15px; color: white; }
-        .stat-val { font-size: 32px; font-weight: 900; color: var(--g); }
-        .ai-text { font-size: 14px; color: #bbb; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 16px; border: 1px solid #333; line-height: 1.7; min-height: 100px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+        input { border: none; background: transparent; flex: 1; padding: 12px; outline: none; color: white; font-size: 15px; }
+        .ai-text { font-size: 14px; color: #bbb; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 16px; border: 1px solid #333; line-height: 1.7; flex: 1; }
+        button { background: transparent; border: 1px solid var(--p); color: var(--p); padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div class="panel">
-        <h3>System Stats / 属性</h3>
+        <h3>📊 STATUS / 属性看板</h3>
         <div style="flex:1; display:flex; align-items:center;"><canvas id="radar"></canvas></div>
-        <div style="margin-top:20px;"><div style="color:#666; font-size:12px;">当前等级</div><div class="stat-val">AGENT LV.1</div></div>
+        <div style="font-size:24px; font-weight:bold; color:#ffb800; margin-top:10px;">AGENT LV.1</div>
     </div>
 
     <div class="panel">
-        <div style="display:flex; justify-content:space-between;">
-            <h3>Brain Dump / 意识流</h3>
-            <div class="stat-val" style="font-size:20px;">🪙 <span id="coins">1000</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>🧠 BRAIN DUMP / 意识流</h3>
+            <span style="font-size:20px; color:#ffb800;">🪙 <span id="coins">1000</span></span>
         </div>
         <div id="dumpArea"></div>
-        <div class="input-bar"><input type="text" id="masterInput" placeholder="输入想法，AI将自动调取记忆分析..."></div>
+        <div class="input-bar"><input type="text" id="masterInput" placeholder="输入灵感，AI 将结合记忆分析..."></div>
     </div>
 
     <div class="panel">
-        <h3>AI Strategic / 战略中心</h3>
-        <div class="ai-text" id="aiStatus">等待指令中... 记录想法后，AI 将结合历史记忆为您制定策略。</div>
-        <button onclick="location.reload()" style="margin-top:auto; padding:15px; border-radius:12px; border:1px solid var(--p); background:transparent; color:var(--p); font-weight:bold; cursor:pointer;">刷新记忆同步</button>
+        <h3>✨ AI STRATEGIC / 战略建议</h3>
+        <div class="ai-text" id="aiStatus">正在监听记忆流... 请在中间框输入内容触发 AI 分析。</div>
+        <button onclick="location.reload()">SYNC / 同步记忆</button>
     </div>
 
 <script>
-    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co'；
-    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';const SUPABASE_KEY = ' sb_publishhable_jven8rbif0xupkl2ovhpqa_rywuijty '；
-    const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c'; // 已经为你填好！
+    const SUPABASE_URL = 'https://zcnmdyvaxrjjhvymjzsb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_JVEN8RBiF0xuPKl2oVhpQA_rywUiJTY';
+    const DEEPSEEK_KEY = 'sk-520f594ef712411d97f24cf387047c1c';
 
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);Const _supabase = supabase。createClient (SUPABASE_URL SUPABASE_KEY);
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // AI 记忆分析逻辑
     async function thinkWithAI(newInput) {
         const statusEl = document.getElementById('aiStatus');
-        statusEl.innerHTML = "<span style='color:var(--blue)'>⚡ 正在调取云端记忆并思考...</span>";
-
-        // 1. 获取最近 10 条记忆作为背景
+        statusEl.innerHTML = "<span style='color:var(--blue)'>⚡ 正在调取云端记忆思考中...</span>";
         const { data } = await _supabase.from('life_logs').select('content').order('created_at', { ascending: false }).limit(10);
-        const history = data ? data.map(i => i.content).reverse().join(' -> ') : "无历史记忆";
+        const history = data ? data.map(i => i.content).reverse().join(' -> ') : "";
 
-        try {   尝试{
-            const response = await fetch('https://api.deepseek.com/chat/completions', {Const response = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',   方法:“文章”,
+        try {
+            const res = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_KEY}` },
-                body: JSON.stringify({   身体:JSON.stringify ({
-                    model: "deepseek-chat",   模型:“deepseek-chat”,
-                    messages: [   消息:[
-                        {role: "system", content: "你是一个冷静的特工导师。用户会给你最近的一系列想法。请根据这些'记忆流'，指出用户是否存在言行不一或拖延，并给出一个极简的赚钱建议。"},
-                        {role: "user", content: `我的近期记忆流：${history} | 当前最新想法：${newInput}`}
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [
+                        {role: "system", content: "你是一个毒舌且高效的行动导师。根据用户的记忆流，指出他的执行漏洞并给出一个具体的赚钱建议。"},
+                        {role: "user", content: `历史记忆：${history} | 最新输入：${newInput}`}
                     ]
                 })
             });
-            const result = await response.json();Const result = await response.json()；
+            const result = await res.json();
             statusEl.innerText = result.choices[0].message.content;
-        } catch (e) {
-            statusEl.innerText = "🚨 连接 AI 失败，请检查 API 额度或网络。";
-        }
+        } catch (e) { statusEl.innerText = "🚨 连接失败，请检查 API 额度或网络。"; }
     }
 
-    async function init() {   异步函数init() {
-        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });Const {data} = await _supabase.from('life_logs').select('*').order('created_at'，{升序：false})；
-        if (data) {   If (data) {
-            const area = document.getElementById('dumpArea');const area = document.getElementById('dumpArea')；
-            area.innerHTML = '';
-            let coins = 1000;
-            data.forEach(log => {   数据。forEach(log => {
-                const div = document.createElement('div');const div = document.createElement('div')；
+    async function init() {
+        const { data } = await _supabase.from('life_logs').select('*').order('created_at', { ascending: false });
+        if (data) {
+            const area = document.getElementById('dumpArea');
+            area.innerHTML = ''; let coins = 1000;
+            data.forEach(log => {
+                const div = document.createElement('div');
                 div.className = `bubble ${log.category || 'note'}`;
                 div.innerText = log.content;
                 area.appendChild(div);
@@ -105,12 +93,11 @@ pm/chart.js " > < /脚本>
     document.getElementById('masterInput').addEventListener('keypress', async (e) => {
         if (e.key === 'Enter' && e.target.value.trim()) {
             const val = e.target.value;
-            let type = 'note'; let reward = 10;
-            if (/(做|写|发|赚|拍|学)/.test(val)) { type = 'pos'; reward = 50; }
-            await _supabase.from('life_logs').insert([{ content: val, category: type, coins: reward }]);
+            let type = /(做|写|发|赚|拍|学)/.test(val) ? 'pos' : 'note';
+            await _supabase.from('life_logs').insert([{ content: val, category: type, coins: type === 'pos' ? 50 : 10 }]);
             e.target.value = '';
             await init();
-            thinkWithAI(val); // 触发 AI 记忆思考
+            thinkWithAI(val);
         }
     });
 
